@@ -80,13 +80,13 @@ class Mainscreen extends State<MainActivityTimeSheet> {
                         mainAxisAlignment: MainAxisAlignment.center,
                         children: [
                           const SizedBox(width: 28),
-                          const Icon(Icons.person, color: Colors.green),
+                          const Icon(Icons.person, color: Color(0xFF1B5E20),),
 
                            Text(
                             _username! ,
                             style: TextStyle(
                               color: Colors.black,
-                              fontSize: 22,
+                              fontSize: 18,
                               fontWeight: FontWeight.bold,
                             ),
                           ),
@@ -255,13 +255,15 @@ class Mainscreen extends State<MainActivityTimeSheet> {
                           style: const TextStyle(
                             fontSize: 18,
                             fontWeight: FontWeight.bold,
-                            color: Colors.green,
+                            color: Color(0xFF1B5E20),
                           ),
                         ),
                       ),
                     ),
                     IconButton(
-                      icon: const Icon(Icons.add),
+                      icon: const Icon(Icons.add,
+                        size: 30,
+                          color: Color(0xFF1B5E20),),
                       onPressed: _addNewRow,
                     ),
                   ],
@@ -278,6 +280,7 @@ class Mainscreen extends State<MainActivityTimeSheet> {
                 children: [
                   IconButton(
                     icon: const Icon(Icons.arrow_left),
+                    iconSize: 40.0,
                     onPressed: _decrementWeek,
                   ),
                   Expanded(
@@ -287,13 +290,14 @@ class Mainscreen extends State<MainActivityTimeSheet> {
                         style: const TextStyle(
                           fontSize: 18,
                           fontWeight: FontWeight.bold,
-                          color: Colors.green,
+                            color: Color(0xFF1B5E20),
                         ),
                       ),
                     ),
                   ),
                   IconButton(
                     icon: const Icon(Icons.arrow_right),
+                    iconSize: 40.0,
                     onPressed: _incrementWeek,
                   ),
                 ],
@@ -323,9 +327,9 @@ class Mainscreen extends State<MainActivityTimeSheet> {
               padding: const EdgeInsets.only(right: 20, top: 10),
               child: Align(
                 alignment: Alignment.centerRight,
-                child: const Text(
-                  "Total Hours: ",
-                  style: TextStyle(
+                child: Text(
+                  "Total Hours: ${_calculateTotalHours().toStringAsFixed(2)}",
+                  style: const TextStyle(
                     fontSize: 18,
                     fontWeight: FontWeight.bold,
                     color: Colors.black,
@@ -383,6 +387,7 @@ class Mainscreen extends State<MainActivityTimeSheet> {
           ),
         ),
         // TextFields for daily values
+        // TextFields for daily values
         for (int dayIndex = 0; dayIndex < 5; dayIndex++)
           Container(
             width: 112,
@@ -399,10 +404,19 @@ class Mainscreen extends State<MainActivityTimeSheet> {
               textAlign: TextAlign.center,
               onChanged: (value) {
                 setState(() {
-                  row["days"][dayIndex] = value;
-                  row["date"][dayIndex] = dates2[dayIndex];
+                  // Parse and validate the entered value
+                  double enteredValue = double.tryParse(value) ?? 0;
+                  if (enteredValue > 9) {
+                    // Show toast if the value exceeds 9
+                    _showMessage("Total hrs cannot exceeds 9 hrs");
+                    row["days"][dayIndex] = ""; // Reset invalid input
+                  } else {
+                    // Update the valid input
+                    row["days"][dayIndex] = value;
+                    row["date"][dayIndex] = dates2[dayIndex];
+                  }
                 });
-                _updateTotal(index);
+                _updateTotal(index); // Update total after each change
               },
             ),
           ),
@@ -471,8 +485,6 @@ class Mainscreen extends State<MainActivityTimeSheet> {
   void _addNewRow() {
     setState(() {
       _numberOfRows++;
-
-
       _rowsData.add({
         "project": null, // New project field
         "days": ["","","","",""], // 5 empty daily values
@@ -506,27 +518,18 @@ class Mainscreen extends State<MainActivityTimeSheet> {
   }
 
   void prepareRowsData( String weekNo) {
-    // Convert TimesheetData to Map<String, dynamic>
     List<Map<String, dynamic>> timesheetsAsMap = timesheets.map((data) => data.toMap()).toList();
-// Filter by week_no
     List<Map<String, dynamic>> filteredData = timesheetsAsMap
         .where((item) => item['week_no'] == weekNo)
         .toList();
-    // Group by mst_projects_id
     Map<String, List<Map<String, dynamic>>> groupedData = {};
     for (var item in filteredData) {
       String projectId = item['mst_projects_id'];
-      if (!groupedData.containsKey(projectId)) {
-        groupedData[projectId] = [];
-      }
+      if (!groupedData.containsKey(projectId)) {groupedData[projectId] = [];}
       groupedData[projectId]!.add(item);
     }
-
-
     String? userId;
-
     print("data timeshhet : ${groupedData}");
-    // Prepare _rowsData
     groupedData.forEach((projectId, projectEntries) {
       List<String> days = List.filled(5, "");
       List<String> firstDate = List.filled(5, "");
@@ -536,17 +539,18 @@ class Mainscreen extends State<MainActivityTimeSheet> {
       for (var entry in projectEntries) {
         // Map the date to a weekday index (0 = Monday, 4 = Friday)
         DateTime date = DateTime.parse(entry['date']);
-        int dayIndex = date.weekday - 1; // 0 = Monday, ..., 6 = Sunday
-        if (dayIndex >= 0 && dayIndex < 5) { // Consider only weekdays
-          days[dayIndex] = entry['hrs']; // Assign hours to the correct day
-          totalHours += double.parse(entry['hrs']);
+        int dayIndex = date.weekday - 1;
+        if (dayIndex >= 0 && dayIndex < 5) {
+          final parsedHrs = double.tryParse(entry['hrs'] ?? '0') ?? 0.0;
+          print("Check project: Parsed hrs = $totalHours, Raw hrs = ${entry['hrs']}, Row project = ${projectEntries}");
+          days[dayIndex] = parsedHrs.toString(); // Store as a string
+          totalHours += parsedHrs; // Accumulate total hours
           firstDate[dayIndex] = entry['date'];
           mstTimesheetsId[dayIndex] = entry['mst_timesheets_id'];
         }
-
         userId = entry['user_id'];
-
       }
+
 
       setState(() {
         _numberOfRows++;
@@ -572,7 +576,30 @@ class Mainscreen extends State<MainActivityTimeSheet> {
     super.dispose();
   }
 
+  double _calculateTotalHours() {
+    double totalHours = 0;
+    for (var row in _rowsData) {
+      for (var day in row["days"]) {
+        if (day.isNotEmpty) {
+          totalHours += double.tryParse(day) ?? 0; // Safely parse the value
+        }
+      }
+    }
+    return totalHours;
+  }
 
+  void _checkTotalHours(Map<String, dynamic> row) {
+    // Parse hours from the "days" field
+    final totalHours = row["days"]
+        .where((value) => value.isNotEmpty) // Ignore empty values
+        .map((value) => double.tryParse(value) ?? 0) // Parse to double, default to 0
+        .reduce((a, b) => a + b); // Sum all values
+
+    // Check if total exceeds 9 hours
+    if (totalHours > 9) {
+      _showMessage("Total for the day cannot exceed 9 hrs");
+    }
+  }
 
   Widget _buildHeaderCell(String title) {
     return Container(
@@ -581,7 +608,7 @@ class Mainscreen extends State<MainActivityTimeSheet> {
       alignment: Alignment.center,
       margin: EdgeInsets.only(right: 2),
       decoration: BoxDecoration(
-        color: Colors.green,
+        color: Color(0xFF1B5E20),
         borderRadius: BorderRadius.circular(5),
       ),
       child: Text(
@@ -593,12 +620,15 @@ class Mainscreen extends State<MainActivityTimeSheet> {
   }
 
   void _updateTotal(int rowIndex) {
+
     final row = _rowsData[rowIndex];
+    print("row data : ${row["days"]}");
     final total = row["days"]
-        .map((day) => double.tryParse(day) ?? 0.0) // Parse each value as a number
+        .where((day) => day.isNotEmpty) // Filter out empty strings
+        .map((day) => double.tryParse(day) ?? 0.0) // Safely parse each value
         .reduce((a, b) => a + b); // Sum up the values
     setState(() {
-      row["total"] = total.toString();
+      row["total"] = total.toStringAsFixed(2); // Format total to 2 decimal places
     });
   }
 
@@ -697,37 +727,7 @@ class Mainscreen extends State<MainActivityTimeSheet> {
     }
     print(requestBody);
 
-   // List<TimesheetEntry> timesheetEntries = [];
-
-    // for (var row in _rowsData) {
-    //   TimesheetEntry entry = TimesheetEntry(
-    //     date: row['date'], // Assuming `firstDate` maps to `date`
-    //     hrs: row['total'], // Assuming `totalHours` maps to `hrs`
-    //     mstProjectsId: row['project'], // Assuming `projectId` maps to `mst_projects_id`
-    //     mstTimesheetsId: row['mst_timesheets_id'],
-    //     status: row['status'],
-    //     updatedUserId: "", // Default value
-    //     userId: row['user_id'],
-    //     weekNo: week.toString(), // Example: replace with actual week logic if needed
-    //     year: "2024", // Example: replace with actual year logic if needed
-    //   );
-    //
-    //   timesheetEntries.add(entry);
-    // }
-//
-// // Convert the list of model objects to JSON
-//     Map<String, dynamic> requestBody = {
-//       'data': timesheetEntries.map((entry) => entry.toJson()).toList(),
-//     };
-
-    // try {
-    //     final response =  timesheetService.addTimesheet(requestBody);
-    //     print('Timesheet API Response: $response');
-    //   } catch (e) {
-    //     print('Error submitting timesheet: $e');
-    //   }
-      print(requestBody);
-  }
+    }
 
   Future<void> _loadUsername() async {
     String? username = await _sharedPrefHelper.getusername();
@@ -742,6 +742,10 @@ class Mainscreen extends State<MainActivityTimeSheet> {
       _departmentId = departmentid!;
     });
     fetchData();
+  }
+
+  void _showMessage(String message) {
+    ScaffoldMessenger.of(context).showSnackBar(SnackBar(content: Text(message)));
   }
 
 }
