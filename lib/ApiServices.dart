@@ -1,6 +1,9 @@
 import 'dart:convert';
 import 'package:first/LoginResponse.dart';
 import 'package:http/http.dart' as http;
+import 'package:shared_preferences/shared_preferences.dart';
+
+import 'models/LoginModule.dart';
 
 class ApiService {
   final String baseUrl = 'https://devtashseet.proteam.co.in/backend/api/web/validate_login';
@@ -16,8 +19,20 @@ class ApiService {
     final responseBody = await http.Response.fromStream(response);
 
       if (responseBody.statusCode == 200) {
-        final jsonResponse = jsonDecode(responseBody.body);
-        print(' Status code success: ${responseBody.body}');
+        final Map<String, dynamic> jsonResponse = jsonDecode(responseBody.body);
+
+        if (jsonResponse['success'] == 1) {
+          List<dynamic> delegateData = jsonResponse['data'][0]['delegated_emp'];
+          List<DelegateEmployee> delegates = delegateData
+              .map((dynamic emp) => DelegateEmployee.fromJson(emp))
+              .toList();
+          SharedPreferences prefs = await SharedPreferences.getInstance();
+          prefs.setString('delegatedEmployees', jsonEncode(delegates.map((e) => e.toJson()).toList()));
+          print("Delegate employee details saved successfully.");
+        } else {
+          print("Error: ${jsonResponse['message']}");
+        }
+
         return LoginResponse.fromJson(jsonResponse);
       } else {
         print('Failed to log in. Status code: ${response.statusCode}');

@@ -6,6 +6,7 @@ import 'package:first/TimesheetScreen.dart';
 import 'package:flutter/material.dart';
 import 'package:http/http.dart' as http;
 import 'package:shared_preferences/shared_preferences.dart';
+import 'EmployeeActivity.dart';
 import 'SharedPrefHelper.dart';
 import 'Welcome.dart';
 import 'ApiServices.dart';
@@ -28,7 +29,8 @@ class MyApp extends StatelessWidget {
       home: _LoginActivityTimeSheetState(),
       routes: {
         '/login': (context) => _LoginActivityTimeSheetState(),
-        '/main': (context) => MainActivityTimeSheet(),
+        '/employee': (context) => EmployeeActivity(),
+        '/main': (context) => MainActivityTimeSheet(delegate: DelegateEmployee(fullName: "", email: "",userid:"",userrole:"",departmentid:"", roleid: '')),
       },
     );
   }
@@ -109,8 +111,8 @@ class LoginActivityTimeSheet extends State<_LoginActivityTimeSheetState> {
         _usernameController.text,
         _passwordController.text,
       );
-      print('Response Status Code: ${response?.success}');
-      print('Response Body: ${response?.data}');
+
+      if(response?.data[0].delegatedEmp.length == 1) {
       SharedPreferences prefs = await SharedPreferences.getInstance();
       await prefs.setString('username', "true");
       await prefs.reload();
@@ -120,16 +122,31 @@ class LoginActivityTimeSheet extends State<_LoginActivityTimeSheetState> {
             loginResponse = response;
           });
         }
-        _showMessage(loginResponse!.message); // Handle login success
-        await _sharedPrefHelper.saveUserPreferences(isLoggedIn: loginResponse!.data[0].isLoggedIn,
-            userName: loginResponse!.data[0].fullName, userID: loginResponse!.data[0].mstUsersId,
+        _showMessage(loginResponse!.message);
+        await _sharedPrefHelper.saveUserPreferences(
+            isLoggedIn: loginResponse!.data[0].isLoggedIn,
+            userName: loginResponse!.data[0].fullName,
+            userID: loginResponse!.data[0].mstUsersId,
             roleName: loginResponse!.data[0].roleName,
-            roleID: loginResponse!.data[0].roleName, departmentID: loginResponse!.data[0].deptName,
+            roleID: loginResponse!.data[0].roleName,
+            departmentID: loginResponse!.data[0].deptName,
             departmentName: loginResponse!.data[0].deptName,
-            emailID: loginResponse!.data[0].email, token: loginResponse!.data[0].token, changePasswordFlag: loginResponse!.data[0].mstUsersId);
+            emailID: loginResponse!.data[0].email,
+            token: loginResponse!.data[0].token,
+            changePasswordFlag: loginResponse!.data[0].mstUsersId);
         Navigator.pushReplacementNamed(context, '/main');
         _showMessage('Login Successfull');
       } else {
+        SharedPreferences prefs = await SharedPreferences.getInstance();
+        await prefs.setString('username', "true2");
+        await prefs.reload();
+        Navigator.pushReplacementNamed(context, '/employee');
+      }
+      } else {
+        SharedPreferences prefs = await SharedPreferences.getInstance();
+        await prefs.setString('username', "true2");
+        await prefs.reload();
+        Navigator.pushReplacementNamed(context, '/employee');
         _showMessage('Login failed: ${response?.message}');
       }
     } catch (e) {
@@ -293,11 +310,10 @@ class LoginActivityTimeSheet extends State<_LoginActivityTimeSheetState> {
   Future<void> checklogin() async {
     SharedPreferences prefs = await SharedPreferences.getInstance();
     String? login =  prefs.getString('username');
-    print("login Status12 ${login}");
-    if (login != "" && login != null) {
+    if (login != "" && login != null && login == "true") {
       Navigator.pushReplacementNamed(context, '/main');
-    } else {
-    //  Navigator.pushReplacementNamed(context, '/login');
+    } else if (login != "" && login != null && login == "true2") {
+      Navigator.pushReplacementNamed(context, '/employee');
     }
   }
 

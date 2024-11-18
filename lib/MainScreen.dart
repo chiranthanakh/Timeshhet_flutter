@@ -6,11 +6,19 @@ import 'package:first/models/projectModel.dart';
 import 'package:flutter/material.dart';
 import 'package:intl/intl.dart';
 
+import 'EmployeeActivity.dart';
 import 'SharedPrefHelper.dart';
 import 'main.dart';
 import 'models/TimesheetEntry.dart';
 
 class MainActivityTimeSheet extends StatefulWidget {
+
+  final DelegateEmployee delegate;
+
+  // Constructor to receive delegate data
+  const MainActivityTimeSheet({Key? key, required this.delegate}) : super(key: key);
+
+
   @override
   Mainscreen createState() => Mainscreen();
 }
@@ -19,9 +27,11 @@ class Mainscreen extends State<MainActivityTimeSheet> {
   final SharedPrefHelper _sharedPrefHelper = SharedPrefHelper();
   final TimesheetService timesheetService = TimesheetService();
   List<TimesheetData> timesheets = [];
+  bool _isLoading = false;
   List<Map<String, TextEditingController>> rows = []; // List to store controllers for each row's cells
   int _numberOfRows = 0;
   int week = 0; // Initial week
+  int currentWeek = 0;
   String _displaymonth = "";
   String? _username;
   String _userid = "";
@@ -36,13 +46,16 @@ class Mainscreen extends State<MainActivityTimeSheet> {
   late String projectData = "";
   List<Map<String, dynamic>> projectslists = [];
   List<Project> _projects = [];
-
+  List<String> weekNumbers = [];
 
   @override
   void initState() {
     super.initState();
     _loadUsername();
     _fetchProjects();
+
+
+    currentWeek = getFinancialWeek(DateTime.now());
     week = getFinancialWeek(DateTime.now());
     _displaymonth = getMonthNameAndYearFromWeek(week,2024);
   }
@@ -54,60 +67,72 @@ class Mainscreen extends State<MainActivityTimeSheet> {
     dates2 = getDatesForFinancia(2024, week);
     return Scaffold(
       backgroundColor: Colors.white,
-      appBar: PreferredSize(
-        preferredSize: const Size.fromHeight(150), // Custom height for AppBar
-        child: AppBar(
-          backgroundColor: Colors.white, // Background color of the AppBar
-          elevation: 5, // Add shadow
-          flexibleSpace: Container(
-            color: Colors.white, // Ensures flexibleSpace also has a white background
-            padding: const EdgeInsets.symmetric(horizontal: 16),
-            child: Column(
-              mainAxisAlignment: MainAxisAlignment.center,
-              children: [
-                // Center Logo
-                Image.asset(
-                  'assets/renew_logo.png',
-                  width: 200,
-                  height: 60,
-                ),
-                // Employee Name Row
-                Row(
-                  children: [
-                    // Centered Icon and Text
-                    Expanded(
-                      child: Row(
-                        mainAxisAlignment: MainAxisAlignment.center,
-                        children: [
-                          const SizedBox(width: 28),
-                          const Icon(Icons.person, color: Color(0xFF1B5E20),),
-
-                           Text(
-                            _username! ,
-                            style: TextStyle(
-                              color: Colors.black,
-                              fontSize: 18,
-                              fontWeight: FontWeight.bold,
-                            ),
-                          ),
-                        ],
+        appBar: PreferredSize(
+          preferredSize: const Size.fromHeight(150), // Custom height for AppBar
+          child: AppBar(
+            backgroundColor: Colors.white, // Background color of the AppBar
+            elevation: 5, // Add shadow
+            flexibleSpace: Container(
+              color: Colors.white, // Ensures flexibleSpace also has a white background
+              padding: const EdgeInsets.symmetric(horizontal: 16),
+              child: Column(
+                mainAxisAlignment: MainAxisAlignment.center,
+                children: [
+                  // Logo and Filter Icon Row
+                  Row(
+                    mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                    children: [
+                      // Renew Logo
+                      Image.asset(
+                        'assets/renew_logo.png',
+                        width: 200,
+                        height: 60,
                       ),
-                    ),
-                    // Refresh button aligned to the end (right)
-                    IconButton(
-                      icon: const Icon(Icons.refresh, color: Colors.black),
-                      onPressed: () {
-                        // Add refresh logic here
-                      },
-                    ),
-                  ],
-                ),
-
-              ],
+                      // Filter Icon
+                      IconButton(
+                        icon: const Icon(Icons.filter_alt, color: Color(0xFF1B5E20)),
+                        onPressed: () {
+                          showFilterPopup(context); // Add your filter popup logic
+                        },
+                      ),
+                    ],
+                  ),
+                  const SizedBox(height: 10),
+                  // Employee Name Row
+                  Row(
+                    children: [
+                      // Centered Icon and Text
+                      Expanded(
+                        child: Row(
+                          mainAxisAlignment: MainAxisAlignment.center,
+                          children: [
+                            const SizedBox(width: 28),
+                            const Icon(Icons.person, color: Color(0xFF1B5E20)),
+                            Text(
+                              _username!,
+                              style: const TextStyle(
+                                color: Colors.black,
+                                fontSize: 18,
+                                fontWeight: FontWeight.bold,
+                              ),
+                            ),
+                          ],
+                        ),
+                      ),
+                      // Refresh button aligned to the end (right)
+                      IconButton(
+                        icon: const Icon(Icons.refresh, color: Colors.black),
+                        onPressed: () {
+                          // Add refresh logic here
+                        },
+                      ),
+                    ],
+                  ),
+                ],
+              ),
             ),
           ),
         ),
-      ),
 
       drawer: Drawer(
         child: ListView(
@@ -260,11 +285,17 @@ class Mainscreen extends State<MainActivityTimeSheet> {
                         ),
                       ),
                     ),
-                    IconButton(
-                      icon: const Icon(Icons.add,
-                        size: 30,
-                          color: Color(0xFF1B5E20),),
-                      onPressed: _addNewRow,
+                    Visibility(
+                      visible: _isDateValid(),
+                      replacement: const SizedBox(), // Replaces the IconButton when hidden
+                      child: IconButton(
+                        icon: const Icon(
+                          Icons.add,
+                          size: 30,
+                          color: Color(0xFF1B5E20),
+                        ),
+                        onPressed: _addNewRow,
+                      ),
                     ),
                   ],
                 ),
@@ -337,24 +368,49 @@ class Mainscreen extends State<MainActivityTimeSheet> {
                 ),
               ),
             ),
-            Row(
-              mainAxisAlignment: MainAxisAlignment.end,
+            Stack(
               children: [
-                ElevatedButton(
-                  onPressed: () {},
-                  child: const Text("Save & Draft"),
+                Column(
+                  children: [
+                    Row(
+                      mainAxisAlignment: MainAxisAlignment.end,
+                      children: [
+                        ElevatedButton(
+                          onPressed: () {
+                            // Save and draft logic here
+                          },
+                          child: const Text("Save & Draft"),
+                        ),
+                        const SizedBox(width: 20),
+                        ElevatedButton(
+                          onPressed: _isLoading ? null : generateRequestBody,
+                          child: const Text("Submit"),
+                        ),
+                      ],
+                    ),
+                  ],
                 ),
-                const SizedBox(width: 20),
-                ElevatedButton(
-                  onPressed: generateRequestBody,
-                  child: const Text("Submit"),
-                ),
+                if (_isLoading)
+                  Positioned.fill(
+                    child: Container(
+                      color: Colors.black54,
+                      child: Center(
+                        child: CircularProgressIndicator(),
+                      ),
+                    ),
+                  ),
               ],
             ),
           ],
         ),
       ),
     );
+  }
+
+  double _calculateRowTotal(List<String> days) {
+    return days
+        .map((day) => double.tryParse(day) ?? 0.0) // Parse each day's value safely
+        .fold(0.0, (sum, value) => sum + value); // Sum up the hours
   }
 
   Widget _buildEditableRow(int index) {
@@ -379,14 +435,26 @@ class Mainscreen extends State<MainActivityTimeSheet> {
               ),
             ))
                 .toList(),
-            onChanged: (String? value) {
-              setState(() {
-                row["project"] = value; // Update the specific row's project
-              });
-            },
+            onChanged: (row["project"] == null || row["project"]!.isEmpty)
+                ? (String? value) {
+              if (_rowsData.any((r) => r["project"] == value)) {
+                // Show popup if the project is already selected
+                _showMessage( "Project already selected.");
+              } else {
+                setState(() {
+                  row["project"] = value; // Update the specific row's project
+                });
+              }
+            }
+                : null, // Disable dropdown if project is not null or empty
+            style: TextStyle(
+              color: (row["project"] == null || row["project"]!.isEmpty)
+                  ? Colors.black
+                  : Colors.grey, // Optional: Change text color to indicate disabled state
+            ),
           ),
         ),
-        // TextFields for daily values
+
         // TextFields for daily values
         for (int dayIndex = 0; dayIndex < 5; dayIndex++)
           Container(
@@ -408,15 +476,16 @@ class Mainscreen extends State<MainActivityTimeSheet> {
                   double enteredValue = double.tryParse(value) ?? 0;
                   if (enteredValue > 9) {
                     // Show toast if the value exceeds 9
-                    _showMessage("Total hrs cannot exceeds 9 hrs");
+                    _showMessage("Total hrs cannot exceed 9 hrs");
                     row["days"][dayIndex] = ""; // Reset invalid input
                   } else {
                     // Update the valid input
                     row["days"][dayIndex] = value;
                     row["date"][dayIndex] = dates2[dayIndex];
                   }
+                  // Recalculate total hours
+                  row["total"] = _calculateRowTotal(row["days"]).toStringAsFixed(2);
                 });
-                _updateTotal(index); // Update total after each change
               },
             ),
           ),
@@ -434,8 +503,8 @@ class Mainscreen extends State<MainActivityTimeSheet> {
               hintText: "Total",
             ),
             textAlign: TextAlign.center,
-            controller: TextEditingController(text: row["total"]),
-            readOnly: true,
+            controller: TextEditingController(text: _calculateRowTotal(row["days"]).toStringAsFixed(2)),
+            readOnly: true, // Total is read-only
           ),
         ),
         // Delete button
@@ -459,15 +528,224 @@ class Mainscreen extends State<MainActivityTimeSheet> {
     );
   }
 
+  //code for filters
+  void showFilterPopup(BuildContext context) {
+    List<String> financialYears = [];
+    List<String> financialMonths = [];
+    List<String> financialWeeks = [];
+    String? selectedYear;
+    String? selectedMonth;
+    String? selectedWeek;
+
+    // Generate financial years (April to March)
+    DateTime now = DateTime.now();
+    int startYear = now.month > 3 ? now.year : now.year - 1;
+    int endYear = startYear + 1;
+
+    financialYears.add("${startYear}-${endYear}");
+    financialYears.add("${2023}-${2024}");
+    financialYears.add("${2022}-${2023}");
+    financialYears.add("${2021}-${2022}");
+    financialYears.add("${2020}-${2021}");
+    // Generate financial months (April to March)
+    financialMonths = [
+      "April $startYear",
+      "May $startYear",
+      "June $startYear",
+      "July $startYear",
+      "August $startYear",
+      "September $startYear",
+      "October $startYear",
+      "November $startYear",
+      "December $startYear",
+      "January $endYear",
+      "February $endYear",
+      "March $endYear"
+    ];
+
+    // Generate weeks for a selected month
+    void generateWeeksForMonth(String month) {
+      financialWeeks.clear();
+
+      // Map the month string to a month number
+      Map<String, int> monthMap = {
+        'April': 4,
+        'May': 5,
+        'June': 6,
+        'July': 7,
+        'August': 8,
+        'September': 9,
+        'October': 10,
+        'November': 11,
+        'December': 12,
+        'January': 1,
+        'February': 2,
+        'March': 3,
+      };
+
+      int year = month.contains(startYear.toString()) ? startYear : endYear;
+      int monthIndex = monthMap[month.split(' ')[0]]!;
+      DateTime firstDay = DateTime(year, monthIndex, 1);
+      DateTime lastDay = DateTime(year, monthIndex + 1, 0);
+
+      int weekCount = 1;
+      DateTime weekStart = firstDay;
+
+      while (weekStart.isBefore(lastDay)) {
+        DateTime weekEnd = weekStart.add(Duration(days: 6));
+        if (weekEnd.isAfter(lastDay)) weekEnd = lastDay;
+
+        financialWeeks.add(
+          "Week $weekCount: ${weekStart.day}/${weekStart.month} - ${weekEnd.day}/${weekEnd.month}",
+        );
+        weekStart = weekEnd.add(Duration(days: 1));
+        weekCount++;
+      }
+    }
+
+    showDialog(
+      context: context,
+      builder: (BuildContext context) {
+        return Dialog(
+          shape: RoundedRectangleBorder(
+            borderRadius: BorderRadius.circular(10),
+          ),
+          child: Container(
+            width: 250,
+            padding: const EdgeInsets.all(20),
+            decoration: BoxDecoration(
+              color: Colors.white,
+              borderRadius: BorderRadius.circular(10),
+            ),
+            child: StatefulBuilder(
+              builder: (context, setState) {
+                return Column(
+                  mainAxisSize: MainAxisSize.min,
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    // Select Year Label
+                    const Text(
+                      'Select Year',
+                      style: TextStyle(
+                        fontSize: 16,
+                        fontWeight: FontWeight.bold,
+                        color: Colors.black,
+                      ),
+                    ),
+                    const SizedBox(height: 5),
+                    DropdownButton<String>(
+                      isExpanded: true,
+                      value: selectedYear,
+                      hint: const Text('Select Year'),
+                      items: financialYears
+                          .map((year) => DropdownMenuItem(
+                        value: year,
+                        child: Text(year),
+                      ))
+                          .toList(),
+                      onChanged: (value) {
+                        setState(() {
+                          selectedYear = value;
+                        });
+                      },
+                      underline: const SizedBox(),
+                    ),
+                    const SizedBox(height: 10),
+
+                    // Select Month Label
+                    const Text(
+                      'Select Month',
+                      style: TextStyle(
+                        fontSize: 16,
+                        fontWeight: FontWeight.bold,
+                        color: Colors.black,
+                      ),
+                    ),
+                    const SizedBox(height: 5),
+                    DropdownButton<String>(
+                      isExpanded: true,
+                      value: selectedMonth,
+                      hint: const Text('Select Month'),
+                      items: financialMonths
+                          .map((month) => DropdownMenuItem(
+                        value: month,
+                        child: Text(month),
+                      ))
+                          .toList(),
+                      onChanged: (value) {
+                        setState(() {
+                          selectedMonth = value;
+                          generateWeeksForMonth(value!);
+                          calculateFinancialWeek(selectedYear as int,selectedMonth as int);
+                          selectedWeek = null; // Reset week selection
+                        });
+                      },
+                      underline: const SizedBox(),
+                    ),
+                    const SizedBox(height: 10),
+
+                    // Select Week Number Label
+                    const Text(
+                      'Select Week Number',
+                      style: TextStyle(
+                        fontSize: 16,
+                        fontWeight: FontWeight.bold,
+                        color: Colors.black,
+                      ),
+                    ),
+                    const SizedBox(height: 5),
+                    DropdownButton<String>(
+                      isExpanded: true,
+                      value: selectedWeek,
+                      hint: const Text('Select Week Number'),
+                      items: weekNumbers
+                          .map((week) => DropdownMenuItem(
+                        value: week,
+                        child: Text(week),
+                      ))
+                          .toList(),
+                      onChanged: (value) {
+                        setState(() {
+                          selectedWeek = value;
+                        });
+                      },
+                      underline: const SizedBox(),
+                    ),
+                    const SizedBox(height: 20),
+
+                    // Search Button
+                    SizedBox(
+                      width: double.infinity,
+                      child: ElevatedButton(
+                        onPressed: () {
+                          setSelection(20);
+                          // prepareRowsData("26");
+                          Navigator.pop(context); // Close popup and handle search
+                          print(
+                              "Selected: Year=$selectedYear, Month=$selectedMonth, Week=$selectedWeek");
+                        },
+                        child: const Text('Search'),
+                      ),
+                    ),
+                  ],
+                );
+              },
+            ),
+          ),
+        );
+      },
+    );
+  }
+
+
   Future<void> fetchData() async {
     _rowsData.clear();
     _numberOfRows = 0;
-    bool? isLoggedIn = await _sharedPrefHelper.getLoginStatus();
     final data = await timesheetService.fetchTimesheets(_userid);
     setState(() {
       timesheets = data;
       print(timesheets);
-      prepareRowsData("33");
+      prepareRowsData(week.toString());
     });
   }
 
@@ -496,7 +774,6 @@ class Mainscreen extends State<MainActivityTimeSheet> {
       });
     });
   }
-
   void _incrementWeek() {
     setState(() {
       week++; // Increment week
@@ -516,7 +793,16 @@ class Mainscreen extends State<MainActivityTimeSheet> {
       prepareRowsData(week.toString());
     });
   }
-
+  void setSelection(int selectedweek) {
+    setState(() {
+      week =selectedweek; // Increment week
+      dates = getDatesForFinancialWeek(2024, week); // Update dates
+      _displaymonth = getMonthNameAndYearFromWeek(week,2024);
+      _numberOfRows = 0;
+      _rowsData.clear();
+      prepareRowsData(week.toString());
+    });
+  }
   void prepareRowsData( String weekNo) {
     List<Map<String, dynamic>> timesheetsAsMap = timesheets.map((data) => data.toMap()).toList();
     List<Map<String, dynamic>> filteredData = timesheetsAsMap
@@ -567,7 +853,6 @@ class Mainscreen extends State<MainActivityTimeSheet> {
     });
      print("Processed Rows Data: ${_rowsData}");
   }
-
   @override
   void dispose() {
     for (var row in rows) {
@@ -575,7 +860,6 @@ class Mainscreen extends State<MainActivityTimeSheet> {
     }
     super.dispose();
   }
-
   double _calculateTotalHours() {
     double totalHours = 0;
     for (var row in _rowsData) {
@@ -587,20 +871,6 @@ class Mainscreen extends State<MainActivityTimeSheet> {
     }
     return totalHours;
   }
-
-  void _checkTotalHours(Map<String, dynamic> row) {
-    // Parse hours from the "days" field
-    final totalHours = row["days"]
-        .where((value) => value.isNotEmpty) // Ignore empty values
-        .map((value) => double.tryParse(value) ?? 0) // Parse to double, default to 0
-        .reduce((a, b) => a + b); // Sum all values
-
-    // Check if total exceeds 9 hours
-    if (totalHours > 9) {
-      _showMessage("Total for the day cannot exceed 9 hrs");
-    }
-  }
-
   Widget _buildHeaderCell(String title) {
     return Container(
       width: 110,
@@ -618,20 +888,6 @@ class Mainscreen extends State<MainActivityTimeSheet> {
       ),
     );
   }
-
-  void _updateTotal(int rowIndex) {
-
-    final row = _rowsData[rowIndex];
-    print("row data : ${row["days"]}");
-    final total = row["days"]
-        .where((day) => day.isNotEmpty) // Filter out empty strings
-        .map((day) => double.tryParse(day) ?? 0.0) // Safely parse each value
-        .reduce((a, b) => a + b); // Sum up the values
-    setState(() {
-      row["total"] = total.toStringAsFixed(2); // Format total to 2 decimal places
-    });
-  }
-
   List<String> getDatesForFinancialWeek(int financialYear, int weekNumber) {
     List<String> dates = [];
     DateTime startOfFinancialYear = DateTime(financialYear, 4, 1);
@@ -645,7 +901,6 @@ class Mainscreen extends State<MainActivityTimeSheet> {
     }
     return dates;
   }
-
   List<String> getDatesForFinancia(int financialYear, int weekNumber) {
     List<String> dates = [];
     DateTime startOfFinancialYear = DateTime(financialYear, 4, 1);
@@ -659,7 +914,6 @@ class Mainscreen extends State<MainActivityTimeSheet> {
     }
     return dates;
   }
-
   int getFinancialWeek(DateTime currentDate) {
     final int fiscalStartMonth = 4; // April
     final int fiscalStartDay = 1;
@@ -671,64 +925,93 @@ class Mainscreen extends State<MainActivityTimeSheet> {
     week = daysSinceFiscalYearStart;
     return (daysSinceFiscalYearStart ~/ 7) + 1;
     }
-
   String getMonthNameAndYearFromWeek(int financialWeek, int startYear ) {
     DateTime financialYearStart = DateTime(startYear, 4, 1);
     DateTime weekStartDate = financialYearStart.add(Duration(days: (financialWeek - 1) * 7));
     return DateFormat('MMMM yyyy').format(weekStartDate);
   }
 
-  void generateRequestBody() {
-    List<TimesheetEntry> timesheetEntries = [];
-    for (var row in _rowsData) {
-      String projectId = row['project'];
-      List<String> days = row['days'];
-      String totalHours = row['total'];
-      List<String> firstDate = row['date'];
-      List<String> mstTimesheetsId = row['mst_timesheets_id'] ?? ""; // Assuming empty string for missing IDs
-      String userId = _userid;
-      String status = row['status'] ?? "2"; // Defaulting to "2" if status is missing
-      String weekNo = week.toString(); // Set this dynamically as per your requirements
-      String year = "2024"; // Set this dynamically as per your requirements
+  void calculateFinancialWeek(int selectedYear, int selectedMonth) {
+    // Define the start of the financial year (e.g., April 1)
+    DateTime financialYearStart = DateTime(selectedYear, 4, 1);
 
-      // Loop through days (5 days in total)
-      for (int i = 0; i < days.length; i++) {
+    // Convert the selected month to its index (1-based)
+    int monthIndex = DateFormat.MONTH.indexOf(selectedMonth as Pattern) + 1;
+    DateTime monthStart = DateTime(selectedYear, monthIndex, 1);
+    DateTime monthEnd = DateTime(selectedYear, monthIndex + 1, 0);
 
-        if (days[i].isNotEmpty) {
+    // Adjust for months before April
+    if (monthStart.isBefore(financialYearStart)) {
+      financialYearStart = DateTime(selectedYear - 1, 4, 1);
+    }
 
-          TimesheetEntry entry = TimesheetEntry(
-            date: firstDate[i], // Assuming `firstDate` maps to `date`
-            hrs: days[i], // Assuming `totalHours` maps to `hrs`
-            mstProjectsId: projectId, // Assuming `projectId` maps to `mst_projects_id`
-            mstTimesheetsId: mstTimesheetsId[i],
-            status: status,
-            updatedUserId: userId, // Default value
-            userId: userId,
-            weekNo: week.toString(), // Example: replace with actual week logic if needed
-            year: year, // Example: replace with actual year logic if needed
-          );
-          timesheetEntries.add(entry);
-        }
+    // Calculate week numbers for each day in the selected month
+    weekNumbers = [];
+    for (int day = 1; day <= monthEnd.day; day++) {
+      DateTime currentDate = DateTime(selectedYear, monthIndex, day);
+      int daysDifference = currentDate.difference(financialYearStart).inDays;
+      int weekNumber = (daysDifference ~/ 7) + 1; // Week numbers start at 1
+      if (!weekNumbers.contains(weekNumber)) {
+        weekNumbers.add(weekNumber.toString());
       }
     }
 
-    // Final request body
-    Map<String, dynamic> requestBody = {
-      'data': timesheetEntries.map((entry) => entry.toJson()).toList(),
-    };
+    setState(() {});
+  }
 
-    print('Timesheet request: $requestBody');
+  void generateRequestBody() async {
+    setState(() {
+      _isLoading = true; // Show loader
+    });
+
     try {
-      final response =  timesheetService.addTimesheet(requestBody);
-      fetchData();
-      print('Timesheet API Response: $requestBody');
+      List<TimesheetEntry> timesheetEntries = [];
+      for (var row in _rowsData) {
+        String projectId = row['project'];
+        List<String> days = row['days'];
+        String totalHours = row['total'];
+        List<String> firstDate = row['date'];
+        List<String> mstTimesheetsId = row['mst_timesheets_id'] ?? ""; // Assuming empty string for missing IDs
+        String userId = _userid;
+        String status = row['status'] ?? "2"; // Defaulting to "2" if status is missing
+        String weekNo = week.toString(); // Set this dynamically as per your requirements
+        String year = "2024"; // Set this dynamically as per your requirements
+
+        // Loop through days (5 days in total)
+        for (int i = 0; i < days.length; i++) {
+          if (days[i].isNotEmpty) {
+            TimesheetEntry entry = TimesheetEntry(
+              date: firstDate[i],
+              hrs: days[i],
+              mstProjectsId: projectId,
+              mstTimesheetsId: mstTimesheetsId[i],
+              status: status,
+              updatedUserId: userId,
+              userId: userId,
+              weekNo: weekNo,
+              year: year,
+            );
+            timesheetEntries.add(entry);
+          }
+        }
+      }
+
+      Map<String, dynamic> requestBody = {
+        'data': timesheetEntries.map((entry) => entry.toJson()).toList(),
+      };
+
+      print('Timesheet request: $requestBody');
+      final response = await timesheetService.addTimesheet(requestBody); // Make API call
+      refresh();
+      print('Timesheet API Response: $response');
     } catch (e) {
       print('Error submitting timesheet: $e');
+    } finally {
+      setState(() {
+        _isLoading = false; // Hide loader
+      });
     }
-    print(requestBody);
-
-    }
-
+  }
   Future<void> _loadUsername() async {
     String? username = await _sharedPrefHelper.getusername();
     String? userid = await _sharedPrefHelper.getuserid();
@@ -743,9 +1026,21 @@ class Mainscreen extends State<MainActivityTimeSheet> {
     });
     fetchData();
   }
-
   void _showMessage(String message) {
     ScaffoldMessenger.of(context).showSnackBar(SnackBar(content: Text(message)));
+  }
+  void refresh() {
+    week = getFinancialWeek(DateTime.now());
+    prepareRowsData(week.toString());
+    fetchData();
+  }
+
+  _isDateValid() {
+    if(currentWeek < week){
+      return false;
+    } else {
+      return true;
+    }
   }
 
 }
