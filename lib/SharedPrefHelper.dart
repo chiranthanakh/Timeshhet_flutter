@@ -43,6 +43,12 @@ class SharedPrefHelper {
     print('get userid: $usernrole');
     return usernrole;
   }
+  Future<String?> getrollid() async {
+    SharedPreferences prefs = await SharedPreferences.getInstance();
+    String? usernrole = prefs.getString("role_id");
+    print('get role_id: $usernrole');
+    return usernrole;
+  }
 
   Future<String?> getdepartementid() async {
     SharedPreferences prefs = await SharedPreferences.getInstance();

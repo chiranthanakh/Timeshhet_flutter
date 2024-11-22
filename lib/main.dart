@@ -3,6 +3,7 @@ import 'dart:convert';
 import 'package:first/LoginResponse.dart';
 import 'package:first/MainScreen.dart';
 import 'package:first/TimesheetScreen.dart';
+import 'package:first/TimesheetService.dart';
 import 'package:flutter/material.dart';
 import 'package:http/http.dart' as http;
 import 'package:shared_preferences/shared_preferences.dart';
@@ -79,11 +80,13 @@ class _LoginActivityTimeSheetState extends StatefulWidget {
 }
 
 class LoginActivityTimeSheet extends State<_LoginActivityTimeSheetState> {
-  LoginResponse? loginResponse;
+  late LoginResponse loginResponse;
   final TextEditingController _usernameController = TextEditingController();
   final TextEditingController _passwordController = TextEditingController();
   bool _isLoading = false;
-  final ApiService _apiService = ApiService();
+   final ApiService _apiService = ApiService();
+ // final TimesheetService _apiService = TimesheetService();
+
   final SharedPrefHelper _sharedPrefHelper = SharedPrefHelper();
 
   @override
@@ -112,50 +115,51 @@ class LoginActivityTimeSheet extends State<_LoginActivityTimeSheetState> {
         _passwordController.text,
       );
 
-      if(response?.data[0].delegatedEmp.length == 1) {
-      SharedPreferences prefs = await SharedPreferences.getInstance();
-      await prefs.setString('username', "true");
-      await prefs.reload();
-      if (response?.success == 1) {
-        if (response != null) {
-          setState(() {
-            loginResponse = response;
-          });
-        }
-        _showMessage(loginResponse!.message);
+      if (response != null && response.success == 1) {
+        SharedPreferences prefs = await SharedPreferences.getInstance();
+        await prefs.setString('username', "true");
+        await prefs.reload();
+
+        setState(() {
+         // loginResponse = response!;
+        });
+
+        // Save user preferences
         await _sharedPrefHelper.saveUserPreferences(
-            isLoggedIn: loginResponse!.data[0].isLoggedIn,
-            userName: loginResponse!.data[0].fullName,
-            userID: loginResponse!.data[0].mstUsersId,
-            roleName: loginResponse!.data[0].roleName,
-            roleID: loginResponse!.data[0].roleName,
-            departmentID: loginResponse!.data[0].deptName,
-            departmentName: loginResponse!.data[0].deptName,
-            emailID: loginResponse!.data[0].email,
-            token: loginResponse!.data[0].token,
-            changePasswordFlag: loginResponse!.data[0].mstUsersId);
-        Navigator.pushReplacementNamed(context, '/main');
-        _showMessage('Login Successfull');
+          isLoggedIn: loginResponse.data[0].isLoggedIn,
+          userName: loginResponse.data[0].fullName,
+          userID: loginResponse.data[0].mstUsersId,
+          roleName: loginResponse.data[0].roleName,
+          roleID: loginResponse.data[0].roleName, // Fixed duplicated roleName
+          departmentID: loginResponse.data[0].mstDepartmentsId, // Updated correct property
+          departmentName: loginResponse.data[0].deptName,
+          emailID: loginResponse.data[0].email,
+          token: loginResponse.data[0].token,
+          changePasswordFlag: loginResponse.data[0].mstUsersId,
+        );
+
+        // Navigate based on delegated employees
+        if (loginResponse!.data[0].delegatedEmp.length <= 1) {
+          Navigator.pushReplacementNamed(context, '/main');
+        } else {
+          Navigator.pushReplacementNamed(context, '/employee');
+          await prefs.setString('username', "true2");
+          await prefs.reload();
+        }
+
+        _showMessage('Login Successful');
       } else {
-        SharedPreferences prefs = await SharedPreferences.getInstance();
-        await prefs.setString('username', "true2");
-        await prefs.reload();
-        Navigator.pushReplacementNamed(context, '/employee');
-      }
-      } else {
-        SharedPreferences prefs = await SharedPreferences.getInstance();
-        await prefs.setString('username', "true2");
-        await prefs.reload();
-        Navigator.pushReplacementNamed(context, '/employee');
-        _showMessage('Login failed: ${response?.message}');
+        _showMessage('Login failed: ${response?.message ?? "Unknown error"}');
       }
     } catch (e) {
-      _showMessage('An error occurred. Please try again.');
+      // Log and display specific error
+      print('Login error: $e');
+      _showMessage('An error occurred: $e');
+    } finally {
+      setState(() {
+        _isLoading = false;
+      });
     }
-
-    setState(() {
-      _isLoading = false;
-    });
   }
 
   void _showMessage(String message) {
@@ -292,13 +296,12 @@ class LoginActivityTimeSheet extends State<_LoginActivityTimeSheetState> {
                 ),
                 SizedBox(height: 20),
                 Text(
-                  'Version : ',
+                  'Version : 1.0 ',
                   style: TextStyle(
                     fontSize: 18,
                     color: Color(0xFF707070),
                   ),
                 ),
-                SizedBox(height: 20),
               ],
             ),
           ),

@@ -3,6 +3,7 @@ import 'package:first/TimesheetData.dart';
 import 'package:first/models/projectModel.dart';
 import 'package:http/http.dart' as http;
 
+import 'LoginResponse.dart';
 import 'models/TimesheetResponce.dart';
 
 class TimesheetService {
@@ -43,43 +44,44 @@ class TimesheetService {
     }
   }
 
-  //login api
-  Future<void> login(String email, String password) async {
-    const String url = 'https://devtashseet.proteam.co.in/backend/api/web/validate_login';
-    final headers = {'Content-Type': 'application/json'};
-    final body = jsonEncode({
-      'email': email,
-      'password': password,
-    });
-
+  Future<Object?> login(String username, String password) async {
+    final String baseUrl = 'https://devtashseet.proteam.co.in/backend/api/web/validate_login';
+    final url = Uri.parse(baseUrl);
+    print('Base URL: $url'); // Debug log
     try {
-      final response = await http.post(Uri.parse(url), headers: headers, body: body);
-      if (response.statusCode == 200) {
-        final Map<String, dynamic> responseData = json.decode(response.body);
-        if (responseData['success'] == "1") {
-          final data = responseData['data'];
-          final message = responseData['message'];
-          // Access token and user info
-          final token = data[0]['token'];
-          final userInfo = data[0];
-          print('Login successful: $message');
-          print('User Token: $token');
-          print('User Info: $userInfo');
+      final request = http.MultipartRequest('POST', url);
+      request.fields['email'] = username;
+      request.fields['password'] = password;
+
+      // Optional: Remove hardcoded cookie or update dynamically
+      request.headers['Cookie'] = 'ci_session=your_dynamic_session_token';
+      print('Request fields: ${request.fields}');
+
+      final response = await request.send();
+      final responseBody = await http.Response.fromStream(response);
+
+      print('Response status: ${responseBody.statusCode}');
+      print('Response body: ${responseBody.body}');
+
+      if (responseBody.statusCode == 200) {
+        final jsonResponse = jsonDecode(responseBody.body);
+        if (jsonResponse['success'] == 1) {
+          return LoginResponse.fromJson(jsonResponse);
         } else {
-          final message = responseData['message'];
-          print('Login failed: $message');
+          print("API Error: ${jsonResponse['message']}");
         }
       } else {
-        print('Error: ${response.statusCode}');
+        print('HTTP Error: ${responseBody.statusCode}');
       }
-    } catch (e) {
-      print('Error: $e');
+    } catch (e, stackTrace) {
+      return e;
+      print('Error occurred during login: $e');
+      print('Stack trace: $stackTrace');
     }
+    return null;
   }
 
-  void handleLogin() {
-    login('avinash@proteam.co.in', '12345');
-  }
+
 
   Future<List<Project>> getAllProjects(String departmentId) async {
     const String apiUrl =
@@ -139,6 +141,37 @@ class TimesheetService {
     }
 
     return timesheetList;
+  }
+
+  Future<Map<String, dynamic>> fetchStatusByWeek(String userId, String weekNo, int year) async {
+    const String url = "https://devtashseet.proteam.co.in/backend/api/web/Timesheet/get_status_by_week_no";
+
+    // Request body
+    final Map<String, String> requestBody = {
+      "user_id": userId,
+      "week_no": weekNo,
+      "year": year.toString(),
+    };
+
+    try {
+      final response = await http.post(
+        Uri.parse(url),
+        headers: {
+          "Content-Type": "application/json",
+        },
+        body: json.encode(requestBody),
+      );
+
+      // Check the response status code
+      if (response.statusCode == 200) {
+        final data = json.decode(response.body);
+        return data; // Returns the decoded JSON map
+      } else {
+        throw Exception("Failed to fetch data: ${response.statusCode}");
+      }
+    } catch (error) {
+      throw Exception("Error occurred: $error");
+    }
   }
 
   // Function to add timesheet data

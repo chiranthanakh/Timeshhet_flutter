@@ -1,4 +1,6 @@
 import 'dart:convert';
+import 'dart:core';
+import 'dart:core';
 
 import 'package:first/TimesheetData.dart';
 import 'package:first/TimesheetService.dart';
@@ -37,6 +39,9 @@ class Mainscreen extends State<MainActivityTimeSheet> {
   String _userid = "";
   String _roll = "";
   String _departmentId = "";
+  String _rollid = "";
+  String? _statusMessage = "";
+  String? submitstatus = "0";
 
 
   late List<String> dates = [];
@@ -53,7 +58,7 @@ class Mainscreen extends State<MainActivityTimeSheet> {
     super.initState();
     _loadUsername();
     _fetchProjects();
-
+    _fetchStatus();
 
     currentWeek = getFinancialWeek(DateTime.now());
     week = getFinancialWeek(DateTime.now());
@@ -68,71 +73,72 @@ class Mainscreen extends State<MainActivityTimeSheet> {
     return Scaffold(
       backgroundColor: Colors.white,
         appBar: PreferredSize(
-          preferredSize: const Size.fromHeight(150), // Custom height for AppBar
-          child: AppBar(
-            backgroundColor: Colors.white, // Background color of the AppBar
-            elevation: 5, // Add shadow
-            flexibleSpace: Container(
-              color: Colors.white, // Ensures flexibleSpace also has a white background
-              padding: const EdgeInsets.symmetric(horizontal: 16),
-              child: Column(
-                mainAxisAlignment: MainAxisAlignment.center,
+      preferredSize: const Size.fromHeight(150), // Custom height for AppBar
+      child: AppBar(
+        backgroundColor: Colors.white, // Background color of the AppBar
+        elevation: 5, // Add shadow
+        flexibleSpace: Container(
+          color: Colors.lightGreenAccent, // Ensures flexibleSpace also has a white background
+          padding: const EdgeInsets.symmetric(horizontal: 1),
+          child: Column(
+            mainAxisAlignment: MainAxisAlignment.center,
+            children: [
+              const SizedBox(width: 10),
+              Row(
+                mainAxisAlignment: MainAxisAlignment.spaceBetween,
                 children: [
-                  // Logo and Filter Icon Row
-                  Row(
-                    mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                    children: [
-                      // Renew Logo
-                      Image.asset(
-                        'assets/renew_logo.png',
-                        width: 200,
-                        height: 60,
-                      ),
-                      // Filter Icon
-                      IconButton(
-                        icon: const Icon(Icons.filter_alt, color: Color(0xFF1B5E20)),
-                        onPressed: () {
-                          showFilterPopup(context); // Add your filter popup logic
-                        },
-                      ),
-                    ],
+                  // Renew Logo
+                  const SizedBox(width: 25),
+                  Image.asset(
+                    'assets/renew_logo.png',
+                    width: 200,
+                    height: 60,
                   ),
-                  const SizedBox(height: 10),
-                  // Employee Name Row
-                  Row(
-                    children: [
-                      // Centered Icon and Text
-                      Expanded(
-                        child: Row(
-                          mainAxisAlignment: MainAxisAlignment.center,
-                          children: [
-                            const SizedBox(width: 28),
-                            const Icon(Icons.person, color: Color(0xFF1B5E20)),
-                            Text(
-                              _username!,
-                              style: const TextStyle(
-                                color: Colors.black,
-                                fontSize: 18,
-                                fontWeight: FontWeight.bold,
-                              ),
-                            ),
-                          ],
-                        ),
-                      ),
-                      // Refresh button aligned to the end (right)
-                      IconButton(
-                        icon: const Icon(Icons.refresh, color: Colors.black),
-                        onPressed: () {
-                          // Add refresh logic here
-                        },
-                      ),
-                    ],
+                  // Filter Icon
+                  IconButton(
+                    icon: const Icon(Icons.filter_alt, color: Color(0xFF1B5E20)),
+                    onPressed: () {
+                      showFilterPopup(context); // Add your filter popup logic
+                    },
                   ),
                 ],
               ),
-            ),
+              const SizedBox(height: 10),
+              // Employee Name Row
+              Row(
+                children: [
+                  // Centered Icon and Text
+                  Expanded(
+                    child: Row(
+                      mainAxisAlignment: MainAxisAlignment.center,
+                      children: [
+                        const SizedBox(width: 28),
+                        const Icon(Icons.person, color: Color(0xFF1B5E20)),
+                        Text(
+                          _username!,
+                          style: const TextStyle(
+                            color: Colors.black,
+                            fontSize: 18,
+                            fontWeight: FontWeight.bold,
+                          ),
+                        ),
+                      ],
+                    ),
+                  ),
+                  // Refresh button aligned to the end (right)
+                  IconButton(
+                    icon: const Icon(Icons.refresh, color: Colors.white),
+                    onPressed: () {
+                      // Add refresh logic here
+                    },
+                  ),
+                ],
+              ),
+            ],
           ),
         ),
+      ),
+    ),
 
       drawer: Drawer(
         child: ListView(
@@ -161,63 +167,73 @@ class Mainscreen extends State<MainActivityTimeSheet> {
                       ),
                     ),
                     const SizedBox(height: 10),
-                    Row(
-                      children:  [
-                        Expanded(
-                          flex: 6,
-                          child: Text(
-                            "Name:",
-                            textAlign: TextAlign.end,
-                            style: TextStyle(
-                              fontSize: 15,
-                              fontWeight: FontWeight.bold,
+                    Column(
+                      mainAxisSize: MainAxisSize.min,
+                      children: [
+                        // Name Row
+                        Row(
+                          mainAxisAlignment: MainAxisAlignment.center, // Center the row horizontally
+                          children: [
+                            Expanded(
+                              flex: 6,
+                              child: Text(
+                                "Name:",
+                                textAlign: TextAlign.end,
+                                style: TextStyle(
+                                  fontSize: 15,
+                                  fontWeight: FontWeight.bold,
+                                ),
+                              ),
                             ),
-                          ),
+                            SizedBox(width: 5),
+                            Expanded(
+                              flex: 7,
+                              child: Text(
+                                _username!, // Replace with dynamic content
+                                textAlign: TextAlign.start,
+                                style: TextStyle(
+                                  fontSize: 15,
+                                ),
+                                maxLines: 1, // Ensure the text stays on a single line
+                                overflow: TextOverflow.ellipsis, // Truncate text with ellipsis if it overflows
+                              ),
+                            ),
+                          ],
                         ),
-                        SizedBox(width: 5),
-                        Expanded(
-                          flex: 7,
-                          child: Text(
-                            _username!, // Replace with dynamic content
-                            textAlign: TextAlign.start,
-                            style: TextStyle(
-                              fontSize: 15,
+                        const SizedBox(height: 10),
+                        // Role Row
+                        Row(
+                          mainAxisAlignment: MainAxisAlignment.center, // Center the row horizontally
+                          children: [
+                            Expanded(
+                              flex: 6,
+                              child: Text(
+                                "Role:",
+                                textAlign: TextAlign.end,
+                                style: TextStyle(
+                                  fontSize: 15,
+                                  fontWeight: FontWeight.bold,
+                                ),
+                              ),
                             ),
-                            maxLines: 1, // Ensure the text stays on a single line
-                            overflow: TextOverflow.ellipsis, // Truncate text with ellipsis if it overflows
-                          ),
+                            SizedBox(width: 5),
+                            Expanded(
+                              flex: 7,
+                              child: Text(
+                                _roll, // Replace with dynamic content
+                                textAlign: TextAlign.start,
+                                style: const TextStyle(
+                                  fontSize: 15,
+                                ),
+                                overflow: TextOverflow.ellipsis, // Truncate with ellipsis if too long
+                                softWrap: false, // Prevent wrapping to the next line
+                              ),
+                            ),
+                          ],
                         ),
                       ],
                     ),
 
-                    const SizedBox(height: 10),
-                    // Role Row
-                    Row(
-                      children:  [
-                        Expanded(
-                          flex: 6,
-                          child: Text(
-                            "Role:",
-                            textAlign: TextAlign.end,
-                            style: TextStyle(
-                              fontSize: 15,
-                              fontWeight: FontWeight.bold,
-                            ),
-                          ),
-                        ),
-                        SizedBox(width: 5),
-                        Expanded(
-                          flex: 7,
-                          child: Text(
-                            _roll, // Replace with dynamic content
-                            textAlign: TextAlign.start,
-                            style: TextStyle(
-                              fontSize: 15,
-                            ),
-                          ),
-                        ),
-                      ],
-                    ),
                     // Plant Name Row (Hidden)
 
                   ],
@@ -269,7 +285,7 @@ class Mainscreen extends State<MainActivityTimeSheet> {
             Padding(
               padding: const EdgeInsets.symmetric(vertical: 5),
               child: Container(
-                color: Colors.white,  // Set the background color to white
+                color: Colors.white60,  // Set the background color to white
                 child: Row(
                   children: <Widget>[
                     Expanded(
@@ -316,16 +332,31 @@ class Mainscreen extends State<MainActivityTimeSheet> {
                   ),
                   Expanded(
                     child: Center(
-                      child: Text(
-                        "Week: $week",
-                        style: const TextStyle(
-                          fontSize: 18,
-                          fontWeight: FontWeight.bold,
-                            color: Color(0xFF1B5E20),
-                        ),
+                      child: Row(
+                        mainAxisAlignment: MainAxisAlignment.center,
+                        children: [
+                          Text(
+                            "Week: $week",
+                            style: const TextStyle(
+                              fontSize: 18,
+                              fontWeight: FontWeight.bold,
+                              color: Color(0xFF1B5E20),
+                            ),
+                          ),
+                          const SizedBox(width: 10), // Space between the two Text widgets
+                          Text(
+                            _statusMessage!, // Replace with dynamic or static content
+                            style: const TextStyle(
+                              fontSize: 18,
+                              fontWeight: FontWeight.bold,
+                              color: Colors.black, // Customize color as needed
+                            ),
+                          ),
+                        ],
                       ),
                     ),
                   ),
+
                   IconButton(
                     icon: const Icon(Icons.arrow_right),
                     iconSize: 40.0,
@@ -377,17 +408,63 @@ class Mainscreen extends State<MainActivityTimeSheet> {
                       children: [
                         ElevatedButton(
                           onPressed: () {
-                            // Save and draft logic here
+                            if (!_isLoading) {
+                              setState(() {
+                                submitstatus = "0";
+                                _isLoading = true; // Show the loader
+                              });
+                              generateRequestBody().then((_) {
+                                setState(() {
+                                  _isLoading = false; // Hide the loader after processing
+                                });
+                              }).catchError((error) {
+                                setState(() {
+                                  _isLoading = false; // Ensure loader is hidden on error
+                                });
+                                // Handle error here
+                              });
+                            }
                           },
-                          child: const Text("Save & Draft"),
+                          child: _isLoading && submitstatus == "0"
+                              ? SizedBox(
+                            width: 20,
+                            height: 20,
+                            child: CircularProgressIndicator(color: Colors.white, strokeWidth: 2),
+                          )
+                              : const Text("Save & Draft"),
                         ),
                         const SizedBox(width: 20),
                         ElevatedButton(
-                          onPressed: _isLoading ? null : generateRequestBody,
-                          child: const Text("Submit"),
+                          onPressed: () {
+                            if (!_isLoading) {
+                              setState(() {
+                                submitstatus = _rollid == "4" ? "2" : "1";
+                                _isLoading = true; // Show the loader
+                              });
+                              generateRequestBody().then((_) {
+                                setState(() {
+                                  _isLoading = false; // Hide the loader after processing
+                                });
+                              }).catchError((error) {
+                                setState(() {
+                                  _isLoading = false; // Ensure loader is hidden on error
+                                });
+                                // Handle error here
+                              });
+                            }
+                          },
+                          child: _isLoading && (submitstatus == "1" || submitstatus == "2")
+                              ? SizedBox(
+                            width: 20,
+                            height: 20,
+                            child: CircularProgressIndicator(color: Colors.white, strokeWidth: 2),
+                          )
+                              : const Text("Submit"),
                         ),
                       ],
                     ),
+
+
                   ],
                 ),
                 if (_isLoading)
@@ -450,7 +527,7 @@ class Mainscreen extends State<MainActivityTimeSheet> {
             style: TextStyle(
               color: (row["project"] == null || row["project"]!.isEmpty)
                   ? Colors.black
-                  : Colors.grey, // Optional: Change text color to indicate disabled state
+                  : Colors.white, // Optional: Change text color to indicate disabled state
             ),
           ),
         ),
@@ -536,6 +613,7 @@ class Mainscreen extends State<MainActivityTimeSheet> {
     String? selectedYear;
     String? selectedMonth;
     String? selectedWeek;
+    var extractedYear;
 
     // Generate financial years (April to March)
     DateTime now = DateTime.now();
@@ -645,7 +723,9 @@ class Mainscreen extends State<MainActivityTimeSheet> {
                           .toList(),
                       onChanged: (value) {
                         setState(() {
-                          selectedYear = value;
+                          selectedYear = value; // Set the full financial year string
+                          extractedYear = int.parse(value!.split('-')[1]); // Extract 2024
+                          print("Selected Year: $extractedYear");
                         });
                       },
                       underline: const SizedBox(),
@@ -674,9 +754,29 @@ class Mainscreen extends State<MainActivityTimeSheet> {
                           .toList(),
                       onChanged: (value) {
                         setState(() {
-                          selectedMonth = value;
-                          generateWeeksForMonth(value!);
-                          calculateFinancialWeek(selectedYear as int,selectedMonth as int);
+                          selectedMonth = value; // Set the full month string
+
+                          // Extract numeric month from "August 2023"
+                          List<String> monthParts = value!.split(' ');
+                          String monthName = monthParts[0]; // Get "August"
+                          int numericMonth = {
+                            "January": 1,
+                            "February": 2,
+                            "March": 3,
+                            "April": 4,
+                            "May": 5,
+                            "June": 6,
+                            "July": 7,
+                            "August": 8,
+                            "September": 9,
+                            "October": 10,
+                            "November": 11,
+                            "December": 12,
+                          }[monthName]!;
+                          print("Selected Month: $numericMonth");
+
+                          // Update weeks based on the selected month
+                          calculateFinancialWeek(extractedYear, numericMonth);
                           selectedWeek = null; // Reset week selection
                         });
                       },
@@ -718,8 +818,7 @@ class Mainscreen extends State<MainActivityTimeSheet> {
                       width: double.infinity,
                       child: ElevatedButton(
                         onPressed: () {
-                          setSelection(20);
-                          // prepareRowsData("26");
+                          setSelection(int.parse(selectedWeek!));
                           Navigator.pop(context); // Close popup and handle search
                           print(
                               "Selected: Year=$selectedYear, Month=$selectedMonth, Week=$selectedWeek");
@@ -731,6 +830,7 @@ class Mainscreen extends State<MainActivityTimeSheet> {
                 );
               },
             ),
+
           ),
         );
       },
@@ -760,6 +860,42 @@ class Mainscreen extends State<MainActivityTimeSheet> {
     }
   }
 
+  Future<void> _fetchStatus() async {
+    setState(() {
+      _isLoading = true;
+    });
+
+    try {
+      final result = await timesheetService.fetchStatusByWeek(_userid, week.toString(), 2024);
+      print("printgstgatgu ${result["status"]}");
+      if (result["status"] == "0") {
+        setState(() {
+          _statusMessage ="Draft";
+        });
+      } else  if (result["status"] == 1) {
+        setState(() {
+          _statusMessage ="Submitted";
+        });
+      }else  if (result["status"] == "2") {
+        setState(() {
+          _statusMessage ="Approved";
+        });
+      }else  {
+        setState(() {
+          _statusMessage = "";
+        });
+      }
+    } catch (error) {
+      setState(() {
+        _statusMessage = "Error: $error";
+      });
+    } finally {
+      setState(() {
+        _isLoading = false;
+      });
+    }
+  }
+
   void _addNewRow() {
     setState(() {
       _numberOfRows++;
@@ -781,6 +917,7 @@ class Mainscreen extends State<MainActivityTimeSheet> {
       _numberOfRows = 0;
       _rowsData.clear();
       prepareRowsData(week.toString());
+      _fetchStatus();
     });
   }
   void _decrementWeek() {
@@ -791,6 +928,7 @@ class Mainscreen extends State<MainActivityTimeSheet> {
       _numberOfRows = 0;
       _rowsData.clear();
       prepareRowsData(week.toString());
+      _fetchStatus();
     });
   }
   void setSelection(int selectedweek) {
@@ -837,7 +975,6 @@ class Mainscreen extends State<MainActivityTimeSheet> {
         userId = entry['user_id'];
       }
 
-
       setState(() {
         _numberOfRows++;
         _rowsData.add({
@@ -847,7 +984,7 @@ class Mainscreen extends State<MainActivityTimeSheet> {
           "date": firstDate, // Include the first date encountered
           "mst_timesheets_id": mstTimesheetsId,
           "user_id": userId,
-          "status": "2"
+          "status": "0"
         });
       });
     });
@@ -889,6 +1026,7 @@ class Mainscreen extends State<MainActivityTimeSheet> {
     );
   }
   List<String> getDatesForFinancialWeek(int financialYear, int weekNumber) {
+    print("financial year ${financialYear} ${weekNumber}"  );
     List<String> dates = [];
     DateTime startOfFinancialYear = DateTime(financialYear, 4, 1);
     if (DateTime.now().isBefore(startOfFinancialYear)) {
@@ -932,34 +1070,40 @@ class Mainscreen extends State<MainActivityTimeSheet> {
   }
 
   void calculateFinancialWeek(int selectedYear, int selectedMonth) {
-    // Define the start of the financial year (e.g., April 1)
+    print("Financial year: $selectedYear, Month: $selectedMonth");
+
+    // Determine the financial year's starting date
     DateTime financialYearStart = DateTime(selectedYear, 4, 1);
-
-    // Convert the selected month to its index (1-based)
-    int monthIndex = DateFormat.MONTH.indexOf(selectedMonth as Pattern) + 1;
-    DateTime monthStart = DateTime(selectedYear, monthIndex, 1);
-    DateTime monthEnd = DateTime(selectedYear, monthIndex + 1, 0);
-
-    // Adjust for months before April
-    if (monthStart.isBefore(financialYearStart)) {
-      financialYearStart = DateTime(selectedYear - 1, 4, 1);
+    if (selectedMonth < 4) {
+      financialYearStart = DateTime(selectedYear - 1, 4, 1); // Adjust for months before April
     }
 
-    // Calculate week numbers for each day in the selected month
-    weekNumbers = [];
+    // Get the start and end dates of the selected month
+    DateTime monthStart = DateTime(selectedYear, selectedMonth, 1);
+    DateTime monthEnd = DateTime(selectedYear, selectedMonth + 1, 0);
+
+    // Clear and update the weekNumbers list
+    List<String> newWeekNumbers = [];
+
     for (int day = 1; day <= monthEnd.day; day++) {
-      DateTime currentDate = DateTime(selectedYear, monthIndex, day);
+      DateTime currentDate = DateTime(selectedYear, selectedMonth, day);
       int daysDifference = currentDate.difference(financialYearStart).inDays;
       int weekNumber = (daysDifference ~/ 7) + 1; // Week numbers start at 1
-      if (!weekNumbers.contains(weekNumber)) {
-        weekNumbers.add(weekNumber.toString());
+
+      if (!newWeekNumbers.contains(weekNumber.toString())) {
+        newWeekNumbers.add(weekNumber.toString());
       }
     }
 
-    setState(() {});
+    // Update the weekNumbers list in state
+    setState(() {
+      weekNumbers = newWeekNumbers;
+    });
+
+    print("Week numbers: $weekNumbers");
   }
 
-  void generateRequestBody() async {
+   generateRequestBody() async {
     setState(() {
       _isLoading = true; // Show loader
     });
@@ -973,7 +1117,7 @@ class Mainscreen extends State<MainActivityTimeSheet> {
         List<String> firstDate = row['date'];
         List<String> mstTimesheetsId = row['mst_timesheets_id'] ?? ""; // Assuming empty string for missing IDs
         String userId = _userid;
-        String status = row['status'] ?? "2"; // Defaulting to "2" if status is missing
+        String? status = submitstatus;//\\\status1.toString() ?? "2"; // Defaulting to "2" if status is missing
         String weekNo = week.toString(); // Set this dynamically as per your requirements
         String year = "2024"; // Set this dynamically as per your requirements
 
@@ -1017,12 +1161,15 @@ class Mainscreen extends State<MainActivityTimeSheet> {
     String? userid = await _sharedPrefHelper.getuserid();
     String? userrole = await _sharedPrefHelper.getuserrole();
     String? departmentid = await _sharedPrefHelper.getdepartementid();
+    String? rollid = await _sharedPrefHelper.getrollid();
+
     print("loginstatus ${userid}");
     setState(() {
       _username = username;
       _userid = userid!;//userid!;
       _roll = userrole!;
       _departmentId = departmentid!;
+      _rollid = rollid!;
     });
     fetchData();
   }
