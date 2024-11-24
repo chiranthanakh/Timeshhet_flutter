@@ -152,6 +152,7 @@ class TimesheetService {
       "week_no": weekNo,
       "year": year.toString(),
     };
+    print("responce status ${userId} , ${weekNo} , ${year}");
 
     try {
       final response = await http.post(
@@ -162,9 +163,11 @@ class TimesheetService {
         body: json.encode(requestBody),
       );
 
+
       // Check the response status code
       if (response.statusCode == 200) {
         final data = json.decode(response.body);
+        print("responce status ${data}");
         return data; // Returns the decoded JSON map
       } else {
         throw Exception("Failed to fetch data: ${response.statusCode}");

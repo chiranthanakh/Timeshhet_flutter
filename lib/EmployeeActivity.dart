@@ -29,24 +29,35 @@ class _EmployeeListPageState extends State<EmployeeActivity> {
   Widget build(BuildContext context) {
     return Scaffold(
       appBar: AppBar(
-        backgroundColor: Colors.white,
-        elevation: 0,
-        title: Center(
-          child: Image.asset(
-            'assets/renew_logo.png',
-            width: 180,
-            height: 180,
-          ),
+        backgroundColor: Colors.white, // Background color
+        elevation: 4, // Adds shadow to the AppBar
+        iconTheme: const IconThemeData(color: Colors.green), // Sets drawer icon color
+        centerTitle: true, // Center the title (logo in this case)
+        title: Image.asset(
+          'assets/renew_logo.png', // Path to your logo
+          width: 150, // Adjust logo size as needed
+          height: 50,
         ),
       ),
       body: _delegates.isEmpty
           ? Center(child: CircularProgressIndicator()) // Loading state
-          : Expanded(
-        child: SingleChildScrollView(
-          child: Container(
-            padding: EdgeInsets.all(16),
-            child: Column(
-              children: _delegates.isNotEmpty
+          : SingleChildScrollView(
+        child: Container(
+          padding: EdgeInsets.all(16),
+          child: Column(
+            children: [
+              // Your text view before the list
+              Text(
+                'Select User', // Text to show before the list
+                style: TextStyle(
+                  fontSize: 20, // Adjust font size as needed
+                  fontWeight: FontWeight.bold, // Make it bold
+                  color: Colors.black, // Customize the color
+                ),
+              ),
+              SizedBox(height: 20), // Space between the text and list
+              // Now the list of delegates
+              ..._delegates.isNotEmpty
                   ? _delegates.map((delegate) => Card(
                 elevation: 4,
                 margin: EdgeInsets.symmetric(vertical: 8),
@@ -90,14 +101,14 @@ class _EmployeeListPageState extends State<EmployeeActivity> {
                   ),
                 ),
               ))
-                  .toList()
                   : [Text("No delegated employees found.")],
-            ),
+            ],
           ),
         ),
       ),
     );
   }
+
 
 
 

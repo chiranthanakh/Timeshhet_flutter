@@ -30,7 +30,6 @@ class ApiService {
           List<DelegateEmployee> delegates = delegateData
               .map((dynamic emp) => DelegateEmployee.fromJson(emp))
               .toList();
-
           SharedPreferences prefs = await SharedPreferences.getInstance();
           prefs.setString('delegatedEmployees', jsonEncode(delegates.map((e) => e.toJson()).toList()));
           print("Delegate employee details saved successfully.");

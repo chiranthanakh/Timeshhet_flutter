@@ -121,7 +121,7 @@ class LoginActivityTimeSheet extends State<_LoginActivityTimeSheetState> {
         await prefs.reload();
 
         setState(() {
-         // loginResponse = response!;
+          loginResponse = response;
         });
 
         // Save user preferences
@@ -139,7 +139,7 @@ class LoginActivityTimeSheet extends State<_LoginActivityTimeSheetState> {
         );
 
         // Navigate based on delegated employees
-        if (loginResponse!.data[0].delegatedEmp.length <= 1) {
+        if (loginResponse.data[0].delegatedEmp.length <= 1) {
           Navigator.pushReplacementNamed(context, '/main');
         } else {
           Navigator.pushReplacementNamed(context, '/employee');
@@ -319,7 +319,6 @@ class LoginActivityTimeSheet extends State<_LoginActivityTimeSheetState> {
       Navigator.pushReplacementNamed(context, '/employee');
     }
   }
-
 
 }
 

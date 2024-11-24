@@ -4,6 +4,8 @@ import 'dart:core';
 
 import 'package:first/TimesheetData.dart';
 import 'package:first/TimesheetService.dart';
+import 'package:first/UserprofileScreen.dart';
+import 'package:first/models/NewChangePasswordScreen.dart';
 import 'package:first/models/projectModel.dart';
 import 'package:flutter/material.dart';
 import 'package:intl/intl.dart';
@@ -56,13 +58,13 @@ class Mainscreen extends State<MainActivityTimeSheet> {
   @override
   void initState() {
     super.initState();
-    _loadUsername();
-    _fetchProjects();
-    _fetchStatus();
 
     currentWeek = getFinancialWeek(DateTime.now());
     week = getFinancialWeek(DateTime.now());
     _displaymonth = getMonthNameAndYearFromWeek(week,2024);
+    _loadUsername();
+    _fetchProjects();
+    _fetchStatus(currentWeek);
   }
 
 
@@ -72,73 +74,27 @@ class Mainscreen extends State<MainActivityTimeSheet> {
     dates2 = getDatesForFinancia(2024, week);
     return Scaffold(
       backgroundColor: Colors.white,
-        appBar: PreferredSize(
-      preferredSize: const Size.fromHeight(150), // Custom height for AppBar
-      child: AppBar(
-        backgroundColor: Colors.white, // Background color of the AppBar
-        elevation: 5, // Add shadow
-        flexibleSpace: Container(
-          color: Colors.lightGreenAccent, // Ensures flexibleSpace also has a white background
-          padding: const EdgeInsets.symmetric(horizontal: 1),
-          child: Column(
-            mainAxisAlignment: MainAxisAlignment.center,
-            children: [
-              const SizedBox(width: 10),
-              Row(
-                mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                children: [
-                  // Renew Logo
-                  const SizedBox(width: 25),
-                  Image.asset(
-                    'assets/renew_logo.png',
-                    width: 200,
-                    height: 60,
-                  ),
-                  // Filter Icon
-                  IconButton(
-                    icon: const Icon(Icons.filter_alt, color: Color(0xFF1B5E20)),
-                    onPressed: () {
-                      showFilterPopup(context); // Add your filter popup logic
-                    },
-                  ),
-                ],
-              ),
-              const SizedBox(height: 10),
-              // Employee Name Row
-              Row(
-                children: [
-                  // Centered Icon and Text
-                  Expanded(
-                    child: Row(
-                      mainAxisAlignment: MainAxisAlignment.center,
-                      children: [
-                        const SizedBox(width: 28),
-                        const Icon(Icons.person, color: Color(0xFF1B5E20)),
-                        Text(
-                          _username!,
-                          style: const TextStyle(
-                            color: Colors.black,
-                            fontSize: 18,
-                            fontWeight: FontWeight.bold,
-                          ),
-                        ),
-                      ],
-                    ),
-                  ),
-                  // Refresh button aligned to the end (right)
-                  IconButton(
-                    icon: const Icon(Icons.refresh, color: Colors.white),
-                    onPressed: () {
-                      // Add refresh logic here
-                    },
-                  ),
-                ],
-              ),
-            ],
-          ),
+      appBar: AppBar(
+        backgroundColor: Colors.white, // Background color
+        elevation: 4, // Adds shadow to the AppBar
+        iconTheme: const IconThemeData(color: Colors.green), // Sets drawer icon color
+        centerTitle: true, // Center the title (logo in this case)
+        title: Image.asset(
+          'assets/renew_logo.png', // Path to your logo
+          width: 150, // Adjust logo size as needed
+          height: 50,
         ),
+        actions: [
+          IconButton(
+            icon: const Icon(Icons.filter_alt, color: Colors.green), // Filter icon
+            onPressed: () {
+              // Add your filter logic here
+              print("Filter icon tapped");
+              showFilterPopup(context); // Call your filter popup or logic
+            },
+          ),
+        ],
       ),
-    ),
 
       drawer: Drawer(
         child: ListView(
@@ -255,16 +211,26 @@ class Mainscreen extends State<MainActivityTimeSheet> {
               leading: const Icon(Icons.account_circle),
               title: const Text('Profile'),
               onTap: () {
-                // Add navigation logic here
                 Navigator.pop(context); // Close the drawer
+                Navigator.push(
+                  context,
+                  MaterialPageRoute(
+                    builder: (context) => UserProfile(), // Navigate to ChangePasswordScreen
+                  ),
+                );
               },
             ),
             ListTile(
               leading: const Icon(Icons.settings),
               title: const Text('Change Password'),
               onTap: () {
-                // Add navigation logic here
                 Navigator.pop(context); // Close the drawer
+                Navigator.push(
+                  context,
+                  MaterialPageRoute(
+                    builder: (context) => NewChangePasswordScreen(), // Navigate to ChangePasswordScreen
+                  ),
+                );
               },
             ),
             ListTile(
@@ -285,6 +251,41 @@ class Mainscreen extends State<MainActivityTimeSheet> {
             Padding(
               padding: const EdgeInsets.symmetric(vertical: 5),
               child: Container(
+                color: Colors.white60, // Background color for the outer container
+                child: Center(
+                  child: Container(
+                    padding: const EdgeInsets.symmetric(vertical: 8, horizontal: 16), // Add padding around the content
+                    decoration: BoxDecoration(
+                      color: Colors.lightGreenAccent, // Background color for icon and text
+                      borderRadius: BorderRadius.circular(10), // Rounded corners
+                    ),
+                    child: Row(
+                      mainAxisSize: MainAxisSize.min, // Shrink to fit content
+                      children: <Widget>[
+                        const Icon(
+                          Icons.person, // Icon to display
+                          size: 24, // Icon size
+                          color: Color(0xFF1B5E20), // Icon color
+                        ),
+                        const SizedBox(width: 10), // Space between icon and text
+                        Text(
+                          _username!,
+                          style: const TextStyle(
+                            fontSize: 18,
+                            fontWeight: FontWeight.bold,
+                            color: Color(0xFF1B5E20),
+                          ),
+                        ),
+                      ],
+                    ),
+                  ),
+                ),
+              ),
+            ),
+
+            Padding(
+              padding: const EdgeInsets.symmetric(vertical: 5),
+              child: Container(
                 color: Colors.white60,  // Set the background color to white
                 child: Row(
                   children: <Widget>[
@@ -299,6 +300,7 @@ class Mainscreen extends State<MainActivityTimeSheet> {
                             color: Color(0xFF1B5E20),
                           ),
                         ),
+
                       ),
                     ),
                     Visibility(
@@ -317,8 +319,6 @@ class Mainscreen extends State<MainActivityTimeSheet> {
                 ),
               ),
             ),
-
-            // Week Navigation
             Container(
               color: Colors.white,
               height: 50,
@@ -344,12 +344,20 @@ class Mainscreen extends State<MainActivityTimeSheet> {
                             ),
                           ),
                           const SizedBox(width: 10), // Space between the two Text widgets
-                          Text(
-                            _statusMessage!, // Replace with dynamic or static content
-                            style: const TextStyle(
-                              fontSize: 18,
-                              fontWeight: FontWeight.bold,
-                              color: Colors.black, // Customize color as needed
+
+                          Container(
+                            padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4), // Add padding
+                            decoration: BoxDecoration(
+                              color: _getStatusBackgroundColor(), // Dynamic background color
+                              borderRadius: BorderRadius.circular(8), // Optional: Rounded corners
+                            ),
+                            child: Text(
+                              _statusMessage!,
+                              style: const TextStyle(
+                                fontSize: 14,
+                                fontWeight: FontWeight.bold,
+                                color: Colors.white, // Text color (assuming white for visibility)
+                              ),
                             ),
                           ),
                         ],
@@ -365,7 +373,6 @@ class Mainscreen extends State<MainActivityTimeSheet> {
                 ],
               ),
             ),
-            // Horizontal ScrollView for Days Header and Table
             SingleChildScrollView(
               scrollDirection: Axis.horizontal,
               child: Column(
@@ -384,7 +391,6 @@ class Mainscreen extends State<MainActivityTimeSheet> {
                 ],
               ),
             ),
-            // Total Hours and Save/Submit Buttons
             Padding(
               padding: const EdgeInsets.only(right: 20, top: 10),
               child: Align(
@@ -470,7 +476,7 @@ class Mainscreen extends State<MainActivityTimeSheet> {
                 if (_isLoading)
                   Positioned.fill(
                     child: Container(
-                      color: Colors.black54,
+                      color: Colors.white,
                       child: Center(
                         child: CircularProgressIndicator(),
                       ),
@@ -495,7 +501,6 @@ class Mainscreen extends State<MainActivityTimeSheet> {
     return Row(
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
-        // Dropdown for project selection
         Container(
           width: 110,
           padding: const EdgeInsets.symmetric(horizontal: 2.0),
@@ -837,7 +842,6 @@ class Mainscreen extends State<MainActivityTimeSheet> {
     );
   }
 
-
   Future<void> fetchData() async {
     _rowsData.clear();
     _numberOfRows = 0;
@@ -848,6 +852,20 @@ class Mainscreen extends State<MainActivityTimeSheet> {
       prepareRowsData(week.toString());
     });
   }
+
+  Color _getStatusBackgroundColor() {
+    switch (_statusMessage) {
+      case "Draft":
+        return Colors.yellow; // Background color for Draft
+      case "Submitted":
+        return Colors.green; // Background color for Submitted
+      case "Approved":
+        return Colors.blue; // Background color for Approved
+      default:
+        return Colors.white; // Default background color
+    }
+  }
+
 
   Future<void> _fetchProjects() async {
     try {
@@ -860,19 +878,19 @@ class Mainscreen extends State<MainActivityTimeSheet> {
     }
   }
 
-  Future<void> _fetchStatus() async {
+  Future<void> _fetchStatus(int currentWeek) async {
     setState(() {
       _isLoading = true;
     });
 
     try {
-      final result = await timesheetService.fetchStatusByWeek(_userid, week.toString(), 2024);
+      final result = await timesheetService.fetchStatusByWeek(_userid, currentWeek.toString(), 2024);
       print("printgstgatgu ${result["status"]}");
       if (result["status"] == "0") {
         setState(() {
           _statusMessage ="Draft";
         });
-      } else  if (result["status"] == 1) {
+      } else  if (result["status"] == "1") {
         setState(() {
           _statusMessage ="Submitted";
         });
@@ -917,7 +935,7 @@ class Mainscreen extends State<MainActivityTimeSheet> {
       _numberOfRows = 0;
       _rowsData.clear();
       prepareRowsData(week.toString());
-      _fetchStatus();
+      _fetchStatus(week);
     });
   }
   void _decrementWeek() {
@@ -928,7 +946,7 @@ class Mainscreen extends State<MainActivityTimeSheet> {
       _numberOfRows = 0;
       _rowsData.clear();
       prepareRowsData(week.toString());
-      _fetchStatus();
+      _fetchStatus(week);
     });
   }
   void setSelection(int selectedweek) {
@@ -1061,6 +1079,7 @@ class Mainscreen extends State<MainActivityTimeSheet> {
     fiscalYearStart = DateTime(currentDate.year - 1, fiscalStartMonth, fiscalStartDay);}
     int daysSinceFiscalYearStart = currentDate.difference(fiscalYearStart).inDays;
     week = daysSinceFiscalYearStart;
+    _fetchStatus((daysSinceFiscalYearStart ~/ 7) + 1);
     return (daysSinceFiscalYearStart ~/ 7) + 1;
     }
   String getMonthNameAndYearFromWeek(int financialWeek, int startYear ) {
@@ -1071,18 +1090,12 @@ class Mainscreen extends State<MainActivityTimeSheet> {
 
   void calculateFinancialWeek(int selectedYear, int selectedMonth) {
     print("Financial year: $selectedYear, Month: $selectedMonth");
-
-    // Determine the financial year's starting date
     DateTime financialYearStart = DateTime(selectedYear, 4, 1);
     if (selectedMonth < 4) {
       financialYearStart = DateTime(selectedYear - 1, 4, 1); // Adjust for months before April
     }
-
-    // Get the start and end dates of the selected month
     DateTime monthStart = DateTime(selectedYear, selectedMonth, 1);
     DateTime monthEnd = DateTime(selectedYear, selectedMonth + 1, 0);
-
-    // Clear and update the weekNumbers list
     List<String> newWeekNumbers = [];
 
     for (int day = 1; day <= monthEnd.day; day++) {
@@ -1094,8 +1107,6 @@ class Mainscreen extends State<MainActivityTimeSheet> {
         newWeekNumbers.add(weekNumber.toString());
       }
     }
-
-    // Update the weekNumbers list in state
     setState(() {
       weekNumbers = newWeekNumbers;
     });
