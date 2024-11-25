@@ -30,6 +30,13 @@ class SharedPrefHelper {
     return username;
   }
 
+  Future<String?> getemail() async {
+    SharedPreferences prefs = await SharedPreferences.getInstance();
+    String? username = prefs.getString("email_id");
+    print('get username: $username');
+    return username;
+  }
+
   Future<String?> getuserid() async {
     SharedPreferences prefs = await SharedPreferences.getInstance();
     String? usernid = prefs.getString("user_id");
@@ -53,6 +60,13 @@ class SharedPrefHelper {
   Future<String?> getdepartementid() async {
     SharedPreferences prefs = await SharedPreferences.getInstance();
     String? usernrole = prefs.getString("department_id");
+    print('get userid: $usernrole');
+    return usernrole;
+  }
+
+  Future<String?> getdepartementname() async {
+    SharedPreferences prefs = await SharedPreferences.getInstance();
+    String? usernrole = prefs.getString("department_name");
     print('get userid: $usernrole');
     return usernrole;
   }

@@ -14,6 +14,10 @@ class _UserProfileScreen extends State<UserProfile> {
   String _roll = "";
   String _departmentId = "";
   String _rollid = "";
+  String _dname = "";
+  String _email = "";
+
+
   final SharedPrefHelper _sharedPrefHelper = SharedPrefHelper();
 
   @override
@@ -31,37 +35,9 @@ class _UserProfileScreen extends State<UserProfile> {
         iconTheme: IconThemeData(color: Colors.green),
         centerTitle: true,
         title: Image.asset(
-          'assets/user_icon.png',
+          'assets/renew_logo.png',
           width: 150,
           height: 50,
-        ),
-        actions: [
-          IconButton(
-            icon: Icon(Icons.refresh),
-            onPressed: () {
-              // Refresh logic here
-            },
-            color: Colors.green,
-          ),
-        ],
-      ),
-      drawer: Drawer(
-        child: ListView(
-          children: [
-            DrawerHeader(
-              decoration: BoxDecoration(
-                color: Colors.green,
-              ),
-              child: Container(), // You can customize this with logo or user info
-            ),
-            ListTile(
-              title: Text('Profile'),
-              onTap: () {
-                // Handle profile navigation
-              },
-            ),
-            // Add more Drawer items as per your requirement
-          ],
         ),
       ),
       body: SingleChildScrollView(
@@ -88,10 +64,10 @@ class _UserProfileScreen extends State<UserProfile> {
                   children: [
                     buildUserProfileRow("User Name:", _username!),
                     buildUserProfileRow("User ID:", _userid),
-                    buildUserProfileRow("Email ID:", _roll),
-                    buildUserProfileRow("Role Name:", _rollid),
+                    buildUserProfileRow("Email ID:", _email),
+                    buildUserProfileRow("Role Name:", _roll),
                     buildUserProfileRow("Role ID:", _rollid),
-                    buildUserProfileRow("Department:", _departmentId),
+                    buildUserProfileRow("Department:", _dname),
                     buildUserProfileRow("Department ID:", _departmentId),
                   ],
                 ),
@@ -149,9 +125,12 @@ class _UserProfileScreen extends State<UserProfile> {
   Future<void> _loadUsername() async {
     String? username = await _sharedPrefHelper.getusername();
     String? userid = await _sharedPrefHelper.getuserid();
+    String? email = await _sharedPrefHelper.getemail();
     String? userrole = await _sharedPrefHelper.getuserrole();
     String? departmentid = await _sharedPrefHelper.getdepartementid();
     String? rollid = await _sharedPrefHelper.getrollid();
+    String? dname = await _sharedPrefHelper.getrollid();
+
 
     print("loginstatus ${userid}");
     setState(() {
@@ -160,6 +139,7 @@ class _UserProfileScreen extends State<UserProfile> {
       _roll = userrole!;
       _departmentId = departmentid!;
       _rollid = rollid!;
+      _dname = _dname;
     });
   }
 }

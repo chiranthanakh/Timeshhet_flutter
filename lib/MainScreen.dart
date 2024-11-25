@@ -2,6 +2,7 @@ import 'dart:convert';
 import 'dart:core';
 import 'dart:core';
 
+import 'package:first/ReportsScreen.dart';
 import 'package:first/TimesheetData.dart';
 import 'package:first/TimesheetService.dart';
 import 'package:first/UserprofileScreen.dart';
@@ -16,13 +17,8 @@ import 'main.dart';
 import 'models/TimesheetEntry.dart';
 
 class MainActivityTimeSheet extends StatefulWidget {
-
   final DelegateEmployee delegate;
-
-  // Constructor to receive delegate data
   const MainActivityTimeSheet({Key? key, required this.delegate}) : super(key: key);
-
-
   @override
   Mainscreen createState() => Mainscreen();
 }
@@ -221,6 +217,19 @@ class Mainscreen extends State<MainActivityTimeSheet> {
               },
             ),
             ListTile(
+              leading: const Icon(Icons.access_time),
+              title: const Text('Reports'),
+              onTap: () {
+                Navigator.pop(context);
+                Navigator.push(
+                  context,
+                  MaterialPageRoute(
+                    builder: (context) => Reportsscreen(),
+                  ),
+                );
+              },
+            ),
+            ListTile(
               leading: const Icon(Icons.settings),
               title: const Text('Change Password'),
               onTap: () {
@@ -255,30 +264,34 @@ class Mainscreen extends State<MainActivityTimeSheet> {
                 child: Center(
                   child: Container(
                     padding: const EdgeInsets.symmetric(vertical: 8, horizontal: 16), // Add padding around the content
-                    decoration: BoxDecoration(
-                      color: Colors.lightGreenAccent, // Background color for icon and text
-                      borderRadius: BorderRadius.circular(10), // Rounded corners
-                    ),
                     child: Row(
                       mainAxisSize: MainAxisSize.min, // Shrink to fit content
                       children: <Widget>[
                         const Icon(
                           Icons.person, // Icon to display
-                          size: 24, // Icon size
+                          size: 15, // Icon size
                           color: Color(0xFF1B5E20), // Icon color
                         ),
-                        const SizedBox(width: 10), // Space between icon and text
-                        Text(
-                          _username!,
-                          style: const TextStyle(
-                            fontSize: 18,
-                            fontWeight: FontWeight.bold,
-                            color: Color(0xFF1B5E20),
+                        const SizedBox(width: 6), // Space between icon and text
+                        Container(
+                          decoration: BoxDecoration(
+                            color: Colors.lightGreen, // Background color for text
+                            borderRadius: BorderRadius.circular(10), // Rounded corners for text background
+                          ),
+                          padding: const EdgeInsets.symmetric(vertical: 4, horizontal: 8), // Padding around the text
+                          child: Text(
+                            _username!,
+                            style: const TextStyle(
+                              fontSize: 12,
+                              fontWeight: FontWeight.bold,
+                              color: Color(0xFF1B5E20),
+                            ),
                           ),
                         ),
                       ],
                     ),
                   ),
+
                 ),
               ),
             ),
@@ -305,16 +318,20 @@ class Mainscreen extends State<MainActivityTimeSheet> {
                     ),
                     Visibility(
                       visible: _isDateValid(),
-                      replacement: const SizedBox(), // Replaces the IconButton when hidden
-                      child: IconButton(
-                        icon: const Icon(
-                          Icons.add,
-                          size: 30,
-                          color: Color(0xFF1B5E20),
+                      replacement: const SizedBox(),
+                      child: Padding(
+                        padding: const EdgeInsets.only(right: 26.0), // Set right margin here
+                        child: GestureDetector(
+                          onTap: _addNewRow,
+                          child: Image.asset(
+                            'assets/add_plus.png',
+                            width: 30,
+                            height: 30,
+                          ),
                         ),
-                        onPressed: _addNewRow,
                       ),
                     ),
+
                   ],
                 ),
               ),
@@ -348,15 +365,15 @@ class Mainscreen extends State<MainActivityTimeSheet> {
                           Container(
                             padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4), // Add padding
                             decoration: BoxDecoration(
-                              color: _getStatusBackgroundColor(), // Dynamic background color
-                              borderRadius: BorderRadius.circular(8), // Optional: Rounded corners
+                              color: _getStatusBackgroundColor(),
+                              borderRadius: BorderRadius.circular(8),
                             ),
                             child: Text(
                               _statusMessage!,
                               style: const TextStyle(
                                 fontSize: 14,
                                 fontWeight: FontWeight.bold,
-                                color: Colors.white, // Text color (assuming white for visibility)
+                                color: Colors.white,
                               ),
                             ),
                           ),
@@ -381,7 +398,7 @@ class Mainscreen extends State<MainActivityTimeSheet> {
                   // Days Header
                   Row(
                     children: [
-                      _buildHeaderCell('Projecs'),
+                      _buildHeaderCell('Projects'),
                       for (String date in dates) _buildHeaderCell(date),
                       _buildHeaderCell('Total'),
                       _buildHeaderCell("."),
@@ -391,6 +408,7 @@ class Mainscreen extends State<MainActivityTimeSheet> {
                 ],
               ),
             ),
+            const SizedBox(height: 40),
             Padding(
               padding: const EdgeInsets.only(right: 20, top: 10),
               child: Align(
@@ -405,6 +423,7 @@ class Mainscreen extends State<MainActivityTimeSheet> {
                 ),
               ),
             ),
+            const SizedBox(height: 20),
             Stack(
               children: [
                 Column(
@@ -414,63 +433,44 @@ class Mainscreen extends State<MainActivityTimeSheet> {
                       children: [
                         ElevatedButton(
                           onPressed: () {
-                            if (!_isLoading) {
-                              setState(() {
-                                submitstatus = "0";
-                                _isLoading = true; // Show the loader
-                              });
-                              generateRequestBody().then((_) {
-                                setState(() {
-                                  _isLoading = false; // Hide the loader after processing
-                                });
-                              }).catchError((error) {
-                                setState(() {
-                                  _isLoading = false; // Ensure loader is hidden on error
-                                });
-                                // Handle error here
-                              });
-                            }
+                            // Show the confirmation dialog
+                            _showSaveDraftConfirmationDialog();
                           },
+                          style: ElevatedButton.styleFrom(
+                            foregroundColor: Colors.white,
+                            backgroundColor: Colors.green,
+                          ),
                           child: _isLoading && submitstatus == "0"
                               ? SizedBox(
                             width: 20,
                             height: 20,
-                            child: CircularProgressIndicator(color: Colors.white, strokeWidth: 2),
+                            child: CircularProgressIndicator(
+                              color: Colors.white,
+                              strokeWidth: 2,
+                            ),
                           )
                               : const Text("Save & Draft"),
                         ),
+
                         const SizedBox(width: 20),
                         ElevatedButton(
                           onPressed: () {
-                            if (!_isLoading) {
-                              setState(() {
-                                submitstatus = _rollid == "4" ? "2" : "1";
-                                _isLoading = true; // Show the loader
-                              });
-                              generateRequestBody().then((_) {
-                                setState(() {
-                                  _isLoading = false; // Hide the loader after processing
-                                });
-                              }).catchError((error) {
-                                setState(() {
-                                  _isLoading = false; // Ensure loader is hidden on error
-                                });
-                                // Handle error here
-                              });
-                            }
+                            _showConfirmationDialog("Are you sure you want to submit?");
                           },
+                          style: ElevatedButton.styleFrom(
+                            foregroundColor: Colors.white,
+                            backgroundColor: Colors.green,
+                          ),
                           child: _isLoading && (submitstatus == "1" || submitstatus == "2")
                               ? SizedBox(
                             width: 20,
                             height: 20,
                             child: CircularProgressIndicator(color: Colors.white, strokeWidth: 2),
                           )
-                              : const Text("Submit"),
+                              : const Text("Approve & Submit"),
                         ),
                       ],
                     ),
-
-
                   ],
                 ),
                 if (_isLoading)
@@ -599,10 +599,13 @@ class Mainscreen extends State<MainActivityTimeSheet> {
           child: IconButton(
             icon: Icon(Icons.delete, color: Colors.red),
             onPressed: () {
-              setState(() {
-                _rowsData.removeAt(index); // Remove the row data
-                _numberOfRows = _rowsData.length;
-              });
+              // Get the data for the row that is about to be deleted
+              var rowData = _rowsData[index];
+              String projectId = rowData["project"];
+              String userId = rowData["user_id"];
+
+              // Show the delete confirmation dialog
+              _showDeleteConfirmationDialog(projectId, userId, index);
             },
           ),
         ),
@@ -914,6 +917,100 @@ class Mainscreen extends State<MainActivityTimeSheet> {
     }
   }
 
+  void _showSaveDraftConfirmationDialog() {
+    showDialog(
+      context: context,
+      builder: (BuildContext context) {
+        return AlertDialog(
+          title: Text('Confirm Save & Draft'),
+          content: Text('Are you sure you want to save as draft?'),
+          actions: <Widget>[
+            TextButton(
+              child: Text('No'),
+              onPressed: () {
+                Navigator.of(context).pop(); // Close the dialog without performing the action
+              },
+            ),
+            TextButton(
+              child: Text('Yes'),
+              onPressed: () {
+                // Proceed with the Save & Draft logic
+                _saveDraftAction(); // Call the method to execute the Save & Draft action
+                Navigator.of(context).pop(); // Close the dialog
+              },
+            ),
+          ],
+        );
+      },
+    );
+  }
+
+// Function that handles the Save & Draft logic
+  void _saveDraftAction() {
+    if (!_isLoading) {
+      setState(() {
+        submitstatus = "0"; // Set the status to "0" for draft
+        _isLoading = true; // Show the loader
+      });
+      generateRequestBody().then((_) {
+        setState(() {
+          _isLoading = false; // Hide the loader after processing
+        });
+      }).catchError((error) {
+        setState(() {
+          _isLoading = false; // Ensure loader is hidden on error
+        });
+        // Handle error here
+      });
+    }
+  }
+
+  void _showConfirmationDialog(String text) {
+    showDialog(
+      context: context,
+      builder: (BuildContext context) {
+        return AlertDialog(
+          title: Text('Approve & Submit'),
+          content: Text(text),
+          actions: <Widget>[
+            TextButton(
+              child: Text('No'),
+              onPressed: () {
+                Navigator.of(context).pop();
+              },
+            ),
+            TextButton(
+              child: Text('Yes'),
+              onPressed: () {
+                _submitAction();
+                Navigator.of(context).pop();
+              },
+            ),
+          ],
+        );
+      },
+    );
+  }
+
+  void _submitAction() {
+    if (!_isLoading) {
+      setState(() {
+        submitstatus = _rollid == "4" ? "2" : "1";
+        _isLoading = true;
+      });
+      generateRequestBody().then((_) {
+        setState(() {
+          _isLoading = false; // Hide the loader after processing
+        });
+      }).catchError((error) {
+        setState(() {
+          _isLoading = false; // Ensure loader is hidden on error
+        });
+        // Handle error here
+      });
+    }
+  }
+
   void _addNewRow() {
     setState(() {
       _numberOfRows++;
@@ -1116,7 +1213,13 @@ class Mainscreen extends State<MainActivityTimeSheet> {
 
    generateRequestBody() async {
     setState(() {
-      _isLoading = true; // Show loader
+      if ( _rowsData.length == 0) {
+        _showMessage("Please Enter data to Save");
+        _isLoading = true;
+      } else {
+        _isLoading = true;
+      }
+      // Show loader
     });
 
     try {
@@ -1126,11 +1229,11 @@ class Mainscreen extends State<MainActivityTimeSheet> {
         List<String> days = row['days'];
         String totalHours = row['total'];
         List<String> firstDate = row['date'];
-        List<String> mstTimesheetsId = row['mst_timesheets_id'] ?? ""; // Assuming empty string for missing IDs
+        List<String> mstTimesheetsId = row['mst_timesheets_id'] ?? "";
         String userId = _userid;
-        String? status = submitstatus;//\\\status1.toString() ?? "2"; // Defaulting to "2" if status is missing
-        String weekNo = week.toString(); // Set this dynamically as per your requirements
-        String year = "2024"; // Set this dynamically as per your requirements
+        String? status = submitstatus;
+        String weekNo = week.toString();
+        String year = "2024";
 
         // Loop through days (5 days in total)
         for (int i = 0; i < days.length; i++) {
@@ -1200,6 +1303,49 @@ class Mainscreen extends State<MainActivityTimeSheet> {
       return true;
     }
   }
+
+  void deleteRow(String projectId) {
+     timesheetService.deleteTimesheet(projectId, _userid!, week.toString());
+     _showMessage("Project Deleted Successfull");
+  }
+
+  // Function to show the confirmation dialog for delete
+  void _showDeleteConfirmationDialog(String projectId, String userId, int index) {
+    showDialog(
+      context: context,
+      builder: (BuildContext context) {
+        return AlertDialog(
+          title: Text('Confirm Deletion'),
+          content: Text('Are you sure you want to delete this row?'),
+          actions: <Widget>[
+            TextButton(
+              child: Text('No'),
+              onPressed: () {
+                Navigator.of(context).pop(); // Close the dialog without deleting
+              },
+            ),
+            TextButton(
+              child: Text('Yes'),
+              onPressed: () {
+                // Proceed with the delete action
+                _deleteRowAction(projectId, userId, index); // Call the delete method
+                Navigator.of(context).pop(); // Close the dialog
+              },
+            ),
+          ],
+        );
+      },
+    );
+  }
+
+  void _deleteRowAction(String projectId, String userId, int index) {
+    setState(() {
+      deleteRow(projectId); // Call deleteRow with projectId and userId
+      _rowsData.removeAt(index); // Remove the row data from the list
+      _numberOfRows = _rowsData.length; // Update the row count
+    });
+  }
+
 
 }
 

@@ -1,4 +1,5 @@
 import 'dart:convert';
+import 'dart:math';
 
 import 'package:first/LoginResponse.dart';
 import 'package:first/MainScreen.dart';
@@ -119,24 +120,37 @@ class LoginActivityTimeSheet extends State<_LoginActivityTimeSheetState> {
         SharedPreferences prefs = await SharedPreferences.getInstance();
         await prefs.setString('username', "true");
         await prefs.reload();
-
         setState(() {
           loginResponse = response;
         });
-
-        // Save user preferences
-        await _sharedPrefHelper.saveUserPreferences(
-          isLoggedIn: loginResponse.data[0].isLoggedIn,
-          userName: loginResponse.data[0].fullName,
-          userID: loginResponse.data[0].mstUsersId,
-          roleName: loginResponse.data[0].roleName,
-          roleID: loginResponse.data[0].roleName, // Fixed duplicated roleName
-          departmentID: loginResponse.data[0].mstDepartmentsId, // Updated correct property
-          departmentName: loginResponse.data[0].deptName,
-          emailID: loginResponse.data[0].email,
-          token: loginResponse.data[0].token,
-          changePasswordFlag: loginResponse.data[0].mstUsersId,
-        );
+        if(loginResponse.data[0].delegatedEmp.length == 1) {
+          var values = loginResponse.data[0].delegatedEmp[0];
+          await _sharedPrefHelper.saveUserPreferences(
+            isLoggedIn: values.isLoggedIn,
+            userName: values.fullName,
+            userID: values.mstUsersId,
+            roleName: values.roleName,
+            roleID: values.roleName, // Fixed duplicated roleName
+            departmentID: values.mstDepartmentsId, // Updated correct property
+            departmentName: values.deptName,
+            emailID: values.email,
+            token: "",
+            changePasswordFlag: values.mstUsersId,
+          );
+        } else if (loginResponse.data[0].delegatedEmp.length == 0){
+          await _sharedPrefHelper.saveUserPreferences(
+            isLoggedIn: loginResponse.data[0].isLoggedIn,
+            userName: loginResponse.data[0].fullName,
+            userID: loginResponse.data[0].mstUsersId,
+            roleName: loginResponse.data[0].roleName,
+            roleID: loginResponse.data[0].roleName, // Fixed duplicated roleName
+            departmentID: loginResponse.data[0].mstDepartmentsId, // Updated correct property
+            departmentName: loginResponse.data[0].deptName,
+            emailID: loginResponse.data[0].email,
+            token: loginResponse.data[0].token,
+            changePasswordFlag: loginResponse.data[0].mstUsersId,
+          );
+        }
 
         // Navigate based on delegated employees
         if (loginResponse.data[0].delegatedEmp.length <= 1) {
@@ -149,12 +163,12 @@ class LoginActivityTimeSheet extends State<_LoginActivityTimeSheetState> {
 
         _showMessage('Login Successful');
       } else {
-        _showMessage('Login failed: ${response?.message ?? "Unknown error"}');
+        _showMessage('Invalid Email or Password');
       }
     } catch (e) {
       // Log and display specific error
       print('Login error: $e');
-      _showMessage('An error occurred: $e');
+      _showMessage('Something Went wrong');
     } finally {
       setState(() {
         _isLoading = false;

@@ -1,6 +1,6 @@
 {
-    "name": "first",
-    "short_name": "first",
+    "name": "TimeSheet",
+    "short_name": "TimeSheet",
     "start_url": ".",
     "display": "standalone",
     "background_color": "#0175C2",

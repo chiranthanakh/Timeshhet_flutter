@@ -230,4 +230,74 @@ class TimesheetService {
       };
     }
   }
+
+
+  Future<void> fetchReports(String userId, String status) async {
+    final url = Uri.parse("https://devtashseet.proteam.co.in/backend/api/web/Timesheet/get_all_timesheet_by_status");
+    final body = jsonEncode({
+      "status": status,
+      "user_id": userId,
+    });
+
+    try {
+      final response = await http.post(url, headers: {'Content-Type': 'application/json', },
+        body: body,);
+      if (response.statusCode == 200) {
+        final Map<String, dynamic> responseData = jsonDecode(response.body);
+        if (responseData['success'] == 1) {
+          List<dynamic> timesheets = responseData['data'];
+          print("Fetched Timesheets: $timesheets");
+        } else {
+          print("Error: ${responseData['message']}");
+        }
+      } else {
+        print('Request failed with status: ${response.statusCode}');
+      }
+    } catch (error) {
+      print('Error occurred: $error');
+    }
+  }
+
+  Future<Map<String, dynamic>> deleteTimesheet(String projectId, String userId, String weekNo) async {
+    final String apiUrl = "https://devtashseet.proteam.co.in/backend/api/web/Timesheet/get_delete";
+    final Map<String, String> requestBody = {
+      "project_id": projectId,
+      "user_id": userId,
+      "week_no": weekNo,
+    };
+
+    try {
+      // Make the POST request
+      final response = await http.post(
+        Uri.parse(apiUrl),
+        headers: {
+          "Content-Type": "application/json", // Set the content type to JSON
+        },
+        body: json.encode(requestBody), // Encode the request body as JSON
+      );
+
+      // Check if the response is successful
+      if (response.statusCode == 200) {
+        // Decode the response body
+        final Map<String, dynamic> responseData = json.decode(response.body);
+
+        // Print the response for debugging purposes
+        print('API Response: $responseData');
+
+        // Return the response data
+        return responseData;
+      } else {
+        // If the response status is not 200, throw an error
+        throw Exception("Failed to delete timesheet. Error: ${response.statusCode}");
+      }
+    } catch (error) {
+      // Handle any errors that occur during the request
+      print('Error occurred: $error');
+      return {
+        "success": 0,
+        "message": "Error occurred: $error",
+      };
+    }
+  }
+
 }
