@@ -129,7 +129,7 @@ class _UserProfileScreen extends State<UserProfile> {
     String? userrole = await _sharedPrefHelper.getuserrole();
     String? departmentid = await _sharedPrefHelper.getdepartementid();
     String? rollid = await _sharedPrefHelper.getrollid();
-    String? dname = await _sharedPrefHelper.getrollid();
+    String? dname = await _sharedPrefHelper.getdepartementname();
 
 
     print("loginstatus ${userid}");
@@ -139,7 +139,8 @@ class _UserProfileScreen extends State<UserProfile> {
       _roll = userrole!;
       _departmentId = departmentid!;
       _rollid = rollid!;
-      _dname = _dname;
+      _dname = dname!;
+      _email = email!;
     });
   }
 }

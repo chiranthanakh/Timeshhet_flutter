@@ -143,7 +143,7 @@ class LoginActivityTimeSheet extends State<_LoginActivityTimeSheetState> {
             userName: loginResponse.data[0].fullName,
             userID: loginResponse.data[0].mstUsersId,
             roleName: loginResponse.data[0].roleName,
-            roleID: loginResponse.data[0].roleName, // Fixed duplicated roleName
+            roleID: loginResponse.data[0].mstRolesId, // Fixed duplicated roleName
             departmentID: loginResponse.data[0].mstDepartmentsId, // Updated correct property
             departmentName: loginResponse.data[0].deptName,
             emailID: loginResponse.data[0].email,

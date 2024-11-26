@@ -40,6 +40,8 @@ class Mainscreen extends State<MainActivityTimeSheet> {
   String _rollid = "";
   String? _statusMessage = "";
   String? submitstatus = "0";
+  List<TextEditingController> _controllers = List.generate(5, (index) => TextEditingController());
+
 
 
   late List<String> dates = [];
@@ -498,16 +500,28 @@ class Mainscreen extends State<MainActivityTimeSheet> {
 
   Widget _buildEditableRow(int index) {
     final row = _rowsData[index];
+
     return Row(
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
         Container(
           width: 110,
+          height: 40,
+          margin: const EdgeInsets.only(top: 10),
           padding: const EdgeInsets.symmetric(horizontal: 2.0),
-          child: DropdownButton<String>(
+          child: DropdownButtonFormField<String>(
             isExpanded: true,
-            hint: Text('Select Project'),
-            value: row["project"], // Use the row's specific project value
+            isDense: true,
+            decoration: InputDecoration(
+              border: OutlineInputBorder(),
+              contentPadding: EdgeInsets.symmetric(vertical: 12, horizontal: 8.0),
+              hintText: 'Select Project',
+              hintStyle: TextStyle(
+                fontSize: 12.0,
+                color: Colors.black,
+              ),
+            ),
+            value: row["project"],
             items: _projects
                 .map((project) => DropdownMenuItem(
               value: project.id,
@@ -520,24 +534,22 @@ class Mainscreen extends State<MainActivityTimeSheet> {
             onChanged: (row["project"] == null || row["project"]!.isEmpty)
                 ? (String? value) {
               if (_rowsData.any((r) => r["project"] == value)) {
-                // Show popup if the project is already selected
-                _showMessage( "Project already selected.");
+                _showMessage("Project already selected.");
               } else {
                 setState(() {
-                  row["project"] = value; // Update the specific row's project
+                  row["project"] = value;
                 });
               }
             }
-                : null, // Disable dropdown if project is not null or empty
+                : null,
             style: TextStyle(
               color: (row["project"] == null || row["project"]!.isEmpty)
                   ? Colors.black
-                  : Colors.white, // Optional: Change text color to indicate disabled state
+                  : Colors.white,
             ),
           ),
         ),
 
-        // TextFields for daily values
         for (int dayIndex = 0; dayIndex < 5; dayIndex++)
           Container(
             width: 112,
@@ -554,14 +566,24 @@ class Mainscreen extends State<MainActivityTimeSheet> {
               textAlign: TextAlign.center,
               onChanged: (value) {
                 setState(() {
-                  // Parse and validate the entered value
+                  num total = 0;
+                  for (var row in _rowsData) {;
+                    List<String> days = row['days'];
+
+                      total += double.tryParse(days[dayIndex]) ?? 0;
+                      print("------------123-${total}");
+                  }
+
                   double enteredValue = double.tryParse(value) ?? 0;
-                  if (enteredValue > 9) {
-                    // Show toast if the value exceeds 9
+                  if(total+enteredValue > 9) {
+                    _showMessage("Total hrs per day cannot exceed 9 hrs");
+                    row["days"][dayIndex] = "0";
+                    enteredValue = 0;
+                  } else if (enteredValue > 9) {
                     _showMessage("Total hrs cannot exceed 9 hrs");
-                    row["days"][dayIndex] = ""; // Reset invalid input
+                    row["days"][dayIndex] = "0";
+                    enteredValue = 0;
                   } else {
-                    // Update the valid input
                     row["days"][dayIndex] = value;
                     row["date"][dayIndex] = dates2[dayIndex];
                   }
@@ -571,7 +593,6 @@ class Mainscreen extends State<MainActivityTimeSheet> {
               },
             ),
           ),
-        // TextField for total
         Container(
           width: 110,
           height: 40,
@@ -589,7 +610,6 @@ class Mainscreen extends State<MainActivityTimeSheet> {
             readOnly: true, // Total is read-only
           ),
         ),
-        // Delete button
         Container(
           width: 60,
           height: 40,
@@ -599,13 +619,9 @@ class Mainscreen extends State<MainActivityTimeSheet> {
           child: IconButton(
             icon: Icon(Icons.delete, color: Colors.red),
             onPressed: () {
-              // Get the data for the row that is about to be deleted
               var rowData = _rowsData[index];
               String projectId = rowData["project"];
-              String userId = rowData["user_id"];
-
-              // Show the delete confirmation dialog
-              _showDeleteConfirmationDialog(projectId, userId, index);
+              _showDeleteConfirmationDialog(projectId,  index);
             },
           ),
         ),
@@ -821,7 +837,6 @@ class Mainscreen extends State<MainActivityTimeSheet> {
                     ),
                     const SizedBox(height: 20),
 
-                    // Search Button
                     SizedBox(
                       width: double.infinity,
                       child: ElevatedButton(
@@ -831,6 +846,15 @@ class Mainscreen extends State<MainActivityTimeSheet> {
                           print(
                               "Selected: Year=$selectedYear, Month=$selectedMonth, Week=$selectedWeek");
                         },
+                        style: ElevatedButton.styleFrom(
+                          foregroundColor: Colors.white,
+                          backgroundColor: Colors.green, // Text color
+                          padding: EdgeInsets.symmetric(vertical: 15), // Button padding
+                          shape: RoundedRectangleBorder(
+                            borderRadius: BorderRadius.circular(12), // Rounded corners
+                          ),
+                        ),
+
                         child: const Text('Search'),
                       ),
                     ),
@@ -888,7 +912,6 @@ class Mainscreen extends State<MainActivityTimeSheet> {
 
     try {
       final result = await timesheetService.fetchStatusByWeek(_userid, currentWeek.toString(), 2024);
-      print("printgstgatgu ${result["status"]}");
       if (result["status"] == "0") {
         setState(() {
           _statusMessage ="Draft";
@@ -918,6 +941,15 @@ class Mainscreen extends State<MainActivityTimeSheet> {
   }
 
   void _showSaveDraftConfirmationDialog() {
+    var isEmpty = false;
+    for (var row in _rowsData) {
+      if (row['project'] == null) {
+        isEmpty = true;
+      }
+    }
+    if (isEmpty) {
+      _showMessage("Please Select Project");
+    } else {
     showDialog(
       context: context,
       builder: (BuildContext context) {
@@ -928,15 +960,15 @@ class Mainscreen extends State<MainActivityTimeSheet> {
             TextButton(
               child: Text('No'),
               onPressed: () {
-                Navigator.of(context).pop(); // Close the dialog without performing the action
+                Navigator.of(context)
+                    .pop(); // Close the dialog without performing the action
               },
             ),
             TextButton(
               child: Text('Yes'),
               onPressed: () {
-                // Proceed with the Save & Draft logic
-                _saveDraftAction(); // Call the method to execute the Save & Draft action
-                Navigator.of(context).pop(); // Close the dialog
+                _saveDraftAction();
+                Navigator.of(context).pop();
               },
             ),
           ],
@@ -944,28 +976,36 @@ class Mainscreen extends State<MainActivityTimeSheet> {
       },
     );
   }
+  }
 
-// Function that handles the Save & Draft logic
   void _saveDraftAction() {
     if (!_isLoading) {
       setState(() {
-        submitstatus = "0"; // Set the status to "0" for draft
-        _isLoading = true; // Show the loader
+        submitstatus = "0";
+        _isLoading = true;
       });
       generateRequestBody().then((_) {
         setState(() {
-          _isLoading = false; // Hide the loader after processing
+          _isLoading = false;
         });
       }).catchError((error) {
         setState(() {
-          _isLoading = false; // Ensure loader is hidden on error
+          _isLoading = false;
         });
-        // Handle error here
       });
     }
   }
 
   void _showConfirmationDialog(String text) {
+    var isEmpty = false;
+    for (var row in _rowsData) {
+      if (row['project'] == null) {
+        isEmpty = true;
+      }
+    }
+    if (isEmpty) {
+      _showMessage("Please Select Project");
+    } else {
     showDialog(
       context: context,
       builder: (BuildContext context) {
@@ -990,6 +1030,7 @@ class Mainscreen extends State<MainActivityTimeSheet> {
         );
       },
     );
+    }
   }
 
   void _submitAction() {
@@ -1000,11 +1041,11 @@ class Mainscreen extends State<MainActivityTimeSheet> {
       });
       generateRequestBody().then((_) {
         setState(() {
-          _isLoading = false; // Hide the loader after processing
+          _isLoading = false;
         });
       }).catchError((error) {
         setState(() {
-          _isLoading = false; // Ensure loader is hidden on error
+          _isLoading = false;
         });
         // Handle error here
       });
@@ -1105,6 +1146,7 @@ class Mainscreen extends State<MainActivityTimeSheet> {
     });
      print("Processed Rows Data: ${_rowsData}");
   }
+
   @override
   void dispose() {
     for (var row in rows) {
@@ -1219,7 +1261,6 @@ class Mainscreen extends State<MainActivityTimeSheet> {
       } else {
         _isLoading = true;
       }
-      // Show loader
     });
 
     try {
@@ -1307,10 +1348,11 @@ class Mainscreen extends State<MainActivityTimeSheet> {
   void deleteRow(String projectId) {
      timesheetService.deleteTimesheet(projectId, _userid!, week.toString());
      _showMessage("Project Deleted Successfull");
+     refresh();
   }
 
   // Function to show the confirmation dialog for delete
-  void _showDeleteConfirmationDialog(String projectId, String userId, int index) {
+  void _showDeleteConfirmationDialog(String projectId, int index) {
     showDialog(
       context: context,
       builder: (BuildContext context) {
@@ -1327,9 +1369,9 @@ class Mainscreen extends State<MainActivityTimeSheet> {
             TextButton(
               child: Text('Yes'),
               onPressed: () {
-                // Proceed with the delete action
-                _deleteRowAction(projectId, userId, index); // Call the delete method
-                Navigator.of(context).pop(); // Close the dialog
+                Navigator.of(context).pop();
+                var select = week;
+                _deleteRowAction(projectId, _userid, index);
               },
             ),
           ],
@@ -1345,7 +1387,5 @@ class Mainscreen extends State<MainActivityTimeSheet> {
       _numberOfRows = _rowsData.length; // Update the row count
     });
   }
-
-
 }
 
