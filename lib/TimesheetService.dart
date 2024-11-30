@@ -8,13 +8,13 @@ import 'models/TimesheetResponce.dart';
 
 class TimesheetService {
 
-
+  final String apiUrl = "https://devtashseet.proteam.co.in/backend/api/web/";
   // Function to fetch timesheet data and return a list of mst_projects_id
   Future<List<String>> fetchProjectIds(String userId) async {
-    final String apiUrl = "https://devtashseet.proteam.co.in/backend/api/web/Timesheet/get_all";
+
     try {
       final response = await http.post(
-        Uri.parse(apiUrl),
+        Uri.parse(apiUrl+"Timesheet/get_all"),
         headers: {
           'Content-Type': 'application/json',
         },
@@ -45,8 +45,8 @@ class TimesheetService {
   }
 
   Future<Object?> login(String username, String password) async {
-    final String baseUrl = 'https://devtashseet.proteam.co.in/backend/api/web/validate_login';
-    final url = Uri.parse(baseUrl);
+    final String baseUrl = 'https://devtashseet.proteam.co.in/backend/api/web/';
+    final url = Uri.parse(apiUrl+"validate_login");
     print('Base URL: $url'); // Debug log
     try {
       final request = http.MultipartRequest('POST', url);
@@ -84,13 +84,13 @@ class TimesheetService {
 
 
   Future<List<Project>> getAllProjects(String departmentId) async {
-    const String apiUrl =
-        'https://devtashseet.proteam.co.in/backend/api/web/Project/get_all_projects';
+    //const String apiUrl =
+      //  'https://devtashseet.proteam.co.in/backend/api/web/Project/get_all_projects';
     final headers = {'Content-Type': 'application/json'};
     final body = jsonEncode({'mst_departments_id': departmentId});
 
     try {
-      final response = await http.post(Uri.parse(apiUrl), headers: headers, body: body);
+      final response = await http.post(Uri.parse(apiUrl+"Project/get_all_projects"), headers: headers, body: body);
       if (response.statusCode == 200) {
         final Map<String, dynamic> responseData = json.decode(response.body);
 
@@ -110,9 +110,9 @@ class TimesheetService {
   }
 
   Future<List<TimesheetData>> fetchTimesheets(String userId) async {
-    final String baseUrl = 'https://devtashseet.proteam.co.in/backend/api/web/Timesheet/get_all';
+   // final String baseUrl = 'https://devtashseet.proteam.co.in/backend/api/web/Timesheet/get_all';
     final String sessionCookie = 'ci_session=43971f933da5f9a1cac203410f5db33f7250fe6a';
-    final url = Uri.parse(baseUrl);
+    final url = Uri.parse(apiUrl+"Timesheet/get_all");
     List<TimesheetData> timesheetList = [];
     try {
       final request = http.MultipartRequest('POST', url);
@@ -144,7 +144,7 @@ class TimesheetService {
   }
 
   Future<Map<String, dynamic>> fetchStatusByWeek(String userId, String weekNo, int year) async {
-    const String url = "https://devtashseet.proteam.co.in/backend/api/web/Timesheet/get_status_by_week_no";
+    const String url = "https://devtashseet.proteam.co.in/backend/api/web/";
 
     // Request body
     final Map<String, String> requestBody = {
@@ -152,11 +152,11 @@ class TimesheetService {
       "week_no": weekNo,
       "year": year.toString(),
     };
-    print("responce status ${userId} , ${weekNo} , ${year}");
+    print("responce status23 ${userId} , ${weekNo} , ${year}");
 
     try {
       final response = await http.post(
-        Uri.parse(url),
+        Uri.parse(apiUrl+"Timesheet/get_status_by_week_no"),
         headers: {
           "Content-Type": "application/json",
         },
@@ -177,38 +177,12 @@ class TimesheetService {
     }
   }
 
-  // Function to add timesheet data
-  // Future<Map<String, dynamic>> addTimesheet(List<Map<String, dynamic>> timesheetData) async {
-  //   const String apiUrl = 'https://devtashseet.proteam.co.in/backend/api/web/Times';
-  //   final headers = {'Content-Type': 'application/json'};
-  //   final body = jsonEncode({
-  //     'data': timesheetData,
-  //   });
-  //
-  //   try {
-  //     final response = await http.post(Uri.parse(apiUrl), headers: headers, body: body);
-  //     if (response.statusCode == 200) {
-  //       final Map<String, dynamic> responseData = json.decode(response.body);
-  //       if (responseData['success'] == 1) {
-  //         print('Timesheet updated successfully: ${responseData['message']}');
-  //         return responseData; // Return the full response data
-  //       } else {
-  //         throw Exception('Failed to update timesheet: ${responseData['message']}');
-  //       }
-  //     } else {
-  //       throw Exception('Error: ${response.statusCode}');
-  //     }
-  //   } catch (e) {
-  //     print('Error adding timesheet: $e');
-  //     rethrow;
-  //   }
-  // }
 
   Future<Map<String, dynamic>> addTimesheet(Map<String, dynamic> requestBody) async {
     final String apiUrl = "https://devtashseet.proteam.co.in/backend/api/web/Timesheet/add";
     try {
       final response = await http.post(
-        Uri.parse(apiUrl),
+        Uri.parse(apiUrl+"Timesheet/add"),
         headers: {
           "Content-Type": "application/json",
         },
@@ -233,7 +207,9 @@ class TimesheetService {
 
 
   Future<void> fetchReports(String userId, String status) async {
-    final url = Uri.parse("https://devtashseet.proteam.co.in/backend/api/web/Timesheet/get_all_timesheet_by_status");
+    //final url = Uri.parse("https://devtashseet.proteam.co.in/backend/api/web/Timesheet/get_all_timesheet_by_status");
+    final url = Uri.parse(apiUrl+"Timesheet/get_all_timesheet_by_status");
+
     final body = jsonEncode({
       "status": status,
       "user_id": userId,
@@ -259,7 +235,7 @@ class TimesheetService {
   }
 
   Future<Map<String, dynamic>> deleteTimesheet(String projectId, String userId, String weekNo) async {
-    final String apiUrl = "https://devtashseet.proteam.co.in/backend/api/web/Timesheet/get_delete";
+    final String apiUrl1 = "https://devtashseet.proteam.co.in/backend/api/web/Timesheet/get_delete";
     final Map<String, String> requestBody = {
       "project_id": projectId,
       "user_id": userId,
@@ -269,7 +245,7 @@ class TimesheetService {
     try {
       // Make the POST request
       final response = await http.post(
-        Uri.parse(apiUrl),
+        Uri.parse(apiUrl+"Timesheet/get_delete"),
         headers: {
           "Content-Type": "application/json", // Set the content type to JSON
         },

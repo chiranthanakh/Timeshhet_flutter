@@ -3,8 +3,6 @@ import 'dart:math';
 
 import 'package:first/LoginResponse.dart';
 import 'package:first/MainScreen.dart';
-import 'package:first/TimesheetScreen.dart';
-import 'package:first/TimesheetService.dart';
 import 'package:flutter/material.dart';
 import 'package:http/http.dart' as http;
 import 'package:shared_preferences/shared_preferences.dart';
@@ -32,7 +30,7 @@ class MyApp extends StatelessWidget {
       routes: {
         '/login': (context) => _LoginActivityTimeSheetState(),
         '/employee': (context) => EmployeeActivity(),
-        '/main': (context) => MainActivityTimeSheet(delegate: DelegateEmployee(fullName: "", email: "",userid:"",userrole:"",departmentid:"", roleid: '')),
+        '/main': (context) => MainActivityTimeSheet(delegate: DelegateEmployee(fullName: "", email: "",userid:"",userrole:"",departmentid:"", roleid: '', departmentName:"")),
       },
     );
   }
@@ -89,6 +87,7 @@ class LoginActivityTimeSheet extends State<_LoginActivityTimeSheetState> {
  // final TimesheetService _apiService = TimesheetService();
 
   final SharedPrefHelper _sharedPrefHelper = SharedPrefHelper();
+  bool _isPasswordVisible = false;
 
   @override
   void initState() {
@@ -130,8 +129,8 @@ class LoginActivityTimeSheet extends State<_LoginActivityTimeSheetState> {
             userName: values.fullName,
             userID: values.mstUsersId,
             roleName: values.roleName,
-            roleID: values.roleName, // Fixed duplicated roleName
-            departmentID: values.mstDepartmentsId, // Updated correct property
+            roleID: values.mstRolesId,
+            departmentID: values.mstDepartmentsId,
             departmentName: values.deptName,
             emailID: values.email,
             token: "",
@@ -151,9 +150,9 @@ class LoginActivityTimeSheet extends State<_LoginActivityTimeSheetState> {
             changePasswordFlag: loginResponse.data[0].mstUsersId,
           );
         }
-
+        print("check employye role ${loginResponse.data[0].roleName}");
         // Navigate based on delegated employees
-        if (loginResponse.data[0].delegatedEmp.length <= 1) {
+        if (loginResponse.data[0].delegatedEmp.length <= 1 ) {
           Navigator.pushReplacementNamed(context, '/main');
         } else {
           Navigator.pushReplacementNamed(context, '/employee');
@@ -271,21 +270,32 @@ class LoginActivityTimeSheet extends State<_LoginActivityTimeSheetState> {
                           style: TextStyle(color: Colors.black),
                         ),
                         SizedBox(height: 10),
-                        TextFormField(
-                          obscureText: true,
-                          controller: _passwordController,
-                          decoration: InputDecoration(
-                            hintText: 'Password',
-                            hintStyle: TextStyle(color: Colors.grey),
-                            prefixIcon: Icon(Icons.lock, color: Colors.grey),
-                            suffixIcon: Icon(Icons.visibility, color: Colors.grey),
-                            border: OutlineInputBorder(
-                              borderRadius: BorderRadius.circular(8),
-                              borderSide: BorderSide(color: Color(0xFF319038)),
+                      TextFormField(
+                        obscureText: !_isPasswordVisible,  // Toggle between true and false
+                        controller: _passwordController,
+                        decoration: InputDecoration(
+                          hintText: 'Password',
+                          hintStyle: TextStyle(color: Colors.grey),
+                          prefixIcon: Icon(Icons.lock, color: Colors.grey),
+                          suffixIcon: IconButton(
+                            icon: Icon(
+                              _isPasswordVisible ? Icons.visibility_off : Icons.visibility,
+                              color: Colors.grey,
                             ),
+                            onPressed: () {
+                              // Toggle the password visibility when the eye icon is tapped
+                              setState(() {
+                                _isPasswordVisible = !_isPasswordVisible;
+                              });
+                            },
                           ),
-                          style: TextStyle(color: Colors.black),
+                          border: OutlineInputBorder(
+                            borderRadius: BorderRadius.circular(8),
+                            borderSide: BorderSide(color: Color(0xFF319038)),
+                          ),
                         ),
+                        style: TextStyle(color: Colors.black),
+                      ),
                         SizedBox(height: 20),
                         ElevatedButton(
                           onPressed: _isLoading ? null : () => _login(context),

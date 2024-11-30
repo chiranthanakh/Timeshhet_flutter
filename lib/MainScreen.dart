@@ -1,6 +1,7 @@
 import 'dart:convert';
 import 'dart:core';
 import 'dart:core';
+import 'dart:ffi';
 
 import 'package:first/ReportsScreen.dart';
 import 'package:first/TimesheetData.dart';
@@ -38,8 +39,10 @@ class Mainscreen extends State<MainActivityTimeSheet> {
   String _roll = "";
   String _departmentId = "";
   String _rollid = "";
+  String _email = "";
   String? _statusMessage = "";
   String? submitstatus = "0";
+  bool isEmployee = false;
   List<TextEditingController> _controllers = List.generate(5, (index) => TextEditingController());
 
 
@@ -106,93 +109,107 @@ class Mainscreen extends State<MainActivityTimeSheet> {
                 ),
               ),
 
-              child: SizedBox(
-                height: 250, // Set an appropriate height
-                child: Column(
-                  crossAxisAlignment: CrossAxisAlignment.start,
-                  mainAxisAlignment: MainAxisAlignment.end,
-                  children: [
-                    // User Icon
-                    Center(
-                      child: Image.asset(
+                child: SizedBox(
+                  height: 350, // Set an appropriate height
+                  child: Column(
+                    crossAxisAlignment: CrossAxisAlignment.center, // Align Column content to the left
+                    children: [
+                      // User Icon (Remove Center widget to align it to the left)
+                      Image.asset(
                         'assets/user_icon.png', // Replace with your Flutter asset
-                        width: 64,
-                        height: 64,
+                        width: 54,
+                        height: 54,
                       ),
-                    ),
-                    const SizedBox(height: 10),
-                    Column(
-                      mainAxisSize: MainAxisSize.min,
-                      children: [
-                        // Name Row
-                        Row(
-                          mainAxisAlignment: MainAxisAlignment.center, // Center the row horizontally
-                          children: [
-                            Expanded(
-                              flex: 6,
-                              child: Text(
+                      const SizedBox(height: 5),
+                      Column(
+                        mainAxisSize: MainAxisSize.min,
+                        crossAxisAlignment: CrossAxisAlignment.center, // Align children of Column to the left
+                        children: [
+                          // Name Row
+                          Row(
+                            crossAxisAlignment: CrossAxisAlignment.center, // Ensure the row aligns from the start
+                            children: [
+                              Text(
                                 "Name:",
-                                textAlign: TextAlign.end,
+                                textAlign: TextAlign.end, // Align "Name:" text to the right
                                 style: TextStyle(
                                   fontSize: 15,
                                   fontWeight: FontWeight.bold,
                                 ),
                               ),
-                            ),
-                            SizedBox(width: 5),
-                            Expanded(
-                              flex: 7,
-                              child: Text(
+                              const SizedBox(width: 5),
+                              Text(
                                 _username!, // Replace with dynamic content
-                                textAlign: TextAlign.start,
+                                textAlign: TextAlign.start, // Align the username to the left
                                 style: TextStyle(
                                   fontSize: 15,
                                 ),
                                 maxLines: 1, // Ensure the text stays on a single line
                                 overflow: TextOverflow.ellipsis, // Truncate text with ellipsis if it overflows
                               ),
-                            ),
-                          ],
-                        ),
-                        const SizedBox(height: 10),
-                        // Role Row
-                        Row(
-                          mainAxisAlignment: MainAxisAlignment.center, // Center the row horizontally
-                          children: [
-                            Expanded(
-                              flex: 6,
-                              child: Text(
-                                "Role:",
-                                textAlign: TextAlign.end,
+                            ],
+                          ),
+                          //const SizedBox(height: 5),
+                          // Role Row
+                          Row(
+                            crossAxisAlignment: CrossAxisAlignment.start, // Align the row from the start
+                            children: [
+                              // "Role:" text - align to the right
+                              Text(
+                                "Email:",
+                                textAlign: TextAlign.end, // Align "Role:" text to the right
                                 style: TextStyle(
                                   fontSize: 15,
                                   fontWeight: FontWeight.bold,
                                 ),
                               ),
-                            ),
-                            SizedBox(width: 5),
-                            Expanded(
-                              flex: 7,
-                              child: Text(
+                              const SizedBox(width: 5),
+                              // Role text - Align to the left
+                              Expanded(
+                                child: Text(
+                                  _email, // Replace with dynamic content
+                                  textAlign: TextAlign.start, // Align the role text to the left
+                                  style: const TextStyle(
+                                    fontSize: 15,
+                                  ),
+                                  overflow: TextOverflow.ellipsis, // Truncate with ellipsis if too long
+                                  softWrap: false, // Prevent wrapping to the next line
+                                ),
+                              ),
+                            ],
+                          ),
+
+                          const SizedBox(height: 3),
+                          Row(
+                            crossAxisAlignment: CrossAxisAlignment.start, // Align the row from the start
+                            children: [
+                              Text(
+                                "Role:",
+                                textAlign: TextAlign.end, // Align "Role:" text to the right
+                                style: TextStyle(
+                                  fontSize: 15,
+                                  fontWeight: FontWeight.bold,
+                                ),
+                              ),
+                              const SizedBox(width: 5),
+                              Text(
                                 _roll, // Replace with dynamic content
-                                textAlign: TextAlign.start,
+                                textAlign: TextAlign.start, // Align the role text to the left
                                 style: const TextStyle(
                                   fontSize: 15,
                                 ),
                                 overflow: TextOverflow.ellipsis, // Truncate with ellipsis if too long
                                 softWrap: false, // Prevent wrapping to the next line
                               ),
-                            ),
-                          ],
-                        ),
-                      ],
-                    ),
-
-                    // Plant Name Row (Hidden)
-
-                  ],
+                            ],
+                          ),
+                        ],
+                      )
+                    ],
+                  ),
                 ),
-              ),
+
+
             ),
 
             const SizedBox(height: 20),
@@ -201,8 +218,13 @@ class Mainscreen extends State<MainActivityTimeSheet> {
               leading: const Icon(Icons.dashboard),
               title: const Text('Home'),
               onTap: () {
-                // Add navigation logic here
-                Navigator.pop(context); // Close the drawer
+              print("Roll check : ${_roll}");
+                if(_roll == "Employee") {
+                  // Add navigation logic here
+                  Navigator.pop(context);
+                } else{
+                  Navigator.pushReplacementNamed(context, '/employee');
+                }
               },
             ),
             ListTile(
@@ -620,7 +642,10 @@ class Mainscreen extends State<MainActivityTimeSheet> {
             icon: Icon(Icons.delete, color: Colors.red),
             onPressed: () {
               var rowData = _rowsData[index];
-              String projectId = rowData["project"];
+              String projectId = "" ;
+              if(rowData["project"] != null){
+                projectId = rowData["project"] ;
+              }
               _showDeleteConfirmationDialog(projectId,  index);
             },
           ),
@@ -878,6 +903,16 @@ class Mainscreen extends State<MainActivityTimeSheet> {
       print(timesheets);
       prepareRowsData(week.toString());
     });
+    _fetchStatus(currentWeek);
+  }
+  Future<void> fetchclearData() async {
+    _rowsData.clear();
+    _numberOfRows = 0;
+    final data = await timesheetService.fetchTimesheets(_userid);
+    setState(() {
+      timesheets = data;
+      print(timesheets);
+    });
   }
 
   Color _getStatusBackgroundColor() {
@@ -887,7 +922,7 @@ class Mainscreen extends State<MainActivityTimeSheet> {
       case "Submitted":
         return Colors.green; // Background color for Submitted
       case "Approved":
-        return Colors.blue; // Background color for Approved
+        return Colors.lightGreen; // Background color for Approved
       default:
         return Colors.white; // Default background color
     }
@@ -911,7 +946,12 @@ class Mainscreen extends State<MainActivityTimeSheet> {
     });
 
     try {
+
+      if(_userid == ""){
+      _userid =   (await _sharedPrefHelper.getuserid())!;
+      }
       final result = await timesheetService.fetchStatusByWeek(_userid, currentWeek.toString(), 2024);
+      print("ststus checking ${result["status"]}");
       if (result["status"] == "0") {
         setState(() {
           _statusMessage ="Draft";
@@ -948,7 +988,7 @@ class Mainscreen extends State<MainActivityTimeSheet> {
       }
     }
     if (isEmpty) {
-      _showMessage("Please Select Project");
+      _showMessage("Please Select project to Proceed");
     } else {
     showDialog(
       context: context,
@@ -1004,7 +1044,7 @@ class Mainscreen extends State<MainActivityTimeSheet> {
       }
     }
     if (isEmpty) {
-      _showMessage("Please Select Project");
+      _showMessage("Please Select project to Proceed");
     } else {
     showDialog(
       context: context,
@@ -1036,9 +1076,15 @@ class Mainscreen extends State<MainActivityTimeSheet> {
   void _submitAction() {
     if (!_isLoading) {
       setState(() {
-        submitstatus = _rollid == "4" ? "2" : "1";
+        //submitstatus = _rollid == "4" ? "2" : "1";
+        if(isEmployee){
+          submitstatus = "2";
+        }else{
+          submitstatus = "1";
+        }
         _isLoading = true;
       });
+
       generateRequestBody().then((_) {
         setState(() {
           _isLoading = false;
@@ -1062,11 +1108,12 @@ class Mainscreen extends State<MainActivityTimeSheet> {
         "date": ["","","","",""], // Include the first date encountered
         "mst_timesheets_id": ["","","","",""],
         "user_id": "",
-        "status": "2"
+        "status": ""
       });
     });
   }
   void _incrementWeek() {
+    fetchclearData();
     setState(() {
       week++; // Increment week
       dates = getDatesForFinancialWeek(2024, week); // Update dates
@@ -1077,6 +1124,7 @@ class Mainscreen extends State<MainActivityTimeSheet> {
     });
   }
   void _decrementWeek() {
+    fetchclearData();
     setState(() {
       week--; // Increment week
       dates = getDatesForFinancialWeek(2024, week); // Update dates
@@ -1096,6 +1144,9 @@ class Mainscreen extends State<MainActivityTimeSheet> {
       _rowsData.clear();
       prepareRowsData(week.toString());
     });
+  }
+  void delectRowInRimesheet(){
+    timesheets.removeWhere((item) => item.mstProjectsId == 'specific_project_id');
   }
   void prepareRowsData( String weekNo) {
     List<Map<String, dynamic>> timesheetsAsMap = timesheets.map((data) => data.toMap()).toList();
@@ -1276,6 +1327,8 @@ class Mainscreen extends State<MainActivityTimeSheet> {
         String weekNo = week.toString();
         String year = "2024";
 
+        print("statuscheck looking ${submitstatus}");
+
         // Loop through days (5 days in total)
         for (int i = 0; i < days.length; i++) {
           if (days[i].isNotEmpty) {
@@ -1317,6 +1370,8 @@ class Mainscreen extends State<MainActivityTimeSheet> {
     String? userrole = await _sharedPrefHelper.getuserrole();
     String? departmentid = await _sharedPrefHelper.getdepartementid();
     String? rollid = await _sharedPrefHelper.getrollid();
+    String? email = await _sharedPrefHelper.getemail();
+
 
     print("loginstatus ${userid}");
     setState(() {
@@ -1325,6 +1380,12 @@ class Mainscreen extends State<MainActivityTimeSheet> {
       _roll = userrole!;
       _departmentId = departmentid!;
       _rollid = rollid!;
+      _email = email!;
+      if(_roll == "Employee"){
+        isEmployee = true;
+      } else {
+        isEmployee = false;
+      }
     });
     fetchData();
   }
@@ -1348,7 +1409,7 @@ class Mainscreen extends State<MainActivityTimeSheet> {
   void deleteRow(String projectId) {
      timesheetService.deleteTimesheet(projectId, _userid!, week.toString());
      _showMessage("Project Deleted Successfull");
-     refresh();
+     //refresh();
   }
 
   // Function to show the confirmation dialog for delete
@@ -1382,9 +1443,11 @@ class Mainscreen extends State<MainActivityTimeSheet> {
 
   void _deleteRowAction(String projectId, String userId, int index) {
     setState(() {
-      deleteRow(projectId); // Call deleteRow with projectId and userId
-      _rowsData.removeAt(index); // Remove the row data from the list
-      _numberOfRows = _rowsData.length; // Update the row count
+      _rowsData.removeAt(index);
+      deleteRow(projectId);
+      _numberOfRows = _rowsData.length;
+      print("delectedrow===> ${_numberOfRows}");
+
     });
   }
 }
