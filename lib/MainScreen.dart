@@ -31,7 +31,8 @@ class Mainscreen extends State<MainActivityTimeSheet> {
   bool _isLoading = false;
   List<Map<String, TextEditingController>> rows = []; // List to store controllers for each row's cells
   int _numberOfRows = 0;
-  int week = 0; // Initial week
+  int week = 0;
+  int selectedYear = 2024;
   int currentWeek = 0;
   String _displaymonth = "";
   String? _username;
@@ -42,6 +43,8 @@ class Mainscreen extends State<MainActivityTimeSheet> {
   String _email = "";
   String? _statusMessage = "";
   String? submitstatus = "0";
+  String approveBuuten = "";
+  String submitButton = "";
   bool isEmployee = false;
   List<TextEditingController> _controllers = List.generate(5, (index) => TextEditingController());
 
@@ -62,7 +65,7 @@ class Mainscreen extends State<MainActivityTimeSheet> {
 
     currentWeek = getFinancialWeek(DateTime.now());
     week = getFinancialWeek(DateTime.now());
-    _displaymonth = getMonthNameAndYearFromWeek(week,2024);
+    _displaymonth = getMonthNameAndYearFromWeek(week,selectedYear);
     _loadUsername();
     _fetchProjects();
     _fetchStatus(currentWeek);
@@ -71,8 +74,9 @@ class Mainscreen extends State<MainActivityTimeSheet> {
 
   @override
   Widget build(BuildContext context) {
-    dates = getDatesForFinancialWeek(2024, week);
-    dates2 = getDatesForFinancia(2024, week);
+    dates = getDatesForFinancialWeek(selectedYear, week);
+    dates2 = getDatesForFinancia(selectedYear, week);
+    print("checkStatus321 ${dates}");
     return Scaffold(
       backgroundColor: Colors.white,
       appBar: AppBar(
@@ -420,6 +424,7 @@ class Mainscreen extends State<MainActivityTimeSheet> {
                 crossAxisAlignment: CrossAxisAlignment.start,
                 children: [
                   // Days Header
+
                   Row(
                     children: [
                       _buildHeaderCell('Projects'),
@@ -473,7 +478,7 @@ class Mainscreen extends State<MainActivityTimeSheet> {
                               strokeWidth: 2,
                             ),
                           )
-                              : const Text("Save & Draft"),
+                              : const Text("Save as Draft"),
                         ),
 
                         const SizedBox(width: 20),
@@ -491,7 +496,7 @@ class Mainscreen extends State<MainActivityTimeSheet> {
                             height: 20,
                             child: CircularProgressIndicator(color: Colors.white, strokeWidth: 2),
                           )
-                              : const Text("Approve & Submit"),
+                              :  Text(approveBuuten),
                         ),
                       ],
                     ),
@@ -654,17 +659,16 @@ class Mainscreen extends State<MainActivityTimeSheet> {
     );
   }
 
-  //code for filters
   void showFilterPopup(BuildContext context) {
     List<String> financialYears = [];
     List<String> financialMonths = [];
     List<String> financialWeeks = [];
     String? selectedYear;
+    int? yearselect;
     String? selectedMonth;
     String? selectedWeek;
-    var extractedYear;
 
-    // Generate financial years (April to March)
+    var extractedYear;
     DateTime now = DateTime.now();
     int startYear = now.month > 3 ? now.year : now.year - 1;
     int endYear = startYear + 1;
@@ -674,61 +678,34 @@ class Mainscreen extends State<MainActivityTimeSheet> {
     financialYears.add("${2022}-${2023}");
     financialYears.add("${2021}-${2022}");
     financialYears.add("${2020}-${2021}");
-    // Generate financial months (April to March)
-    financialMonths = [
-      "April $startYear",
-      "May $startYear",
-      "June $startYear",
-      "July $startYear",
-      "August $startYear",
-      "September $startYear",
-      "October $startYear",
-      "November $startYear",
-      "December $startYear",
-      "January $endYear",
-      "February $endYear",
-      "March $endYear"
-    ];
 
-    // Generate weeks for a selected month
-    void generateWeeksForMonth(String month) {
-      financialWeeks.clear();
+    void calculateFinancialWeek(int selectedYear, int selectedMonth) {
+      print("Financial year: $selectedYear, Month: $selectedMonth");
 
-      // Map the month string to a month number
-      Map<String, int> monthMap = {
-        'April': 4,
-        'May': 5,
-        'June': 6,
-        'July': 7,
-        'August': 8,
-        'September': 9,
-        'October': 10,
-        'November': 11,
-        'December': 12,
-        'January': 1,
-        'February': 2,
-        'March': 3,
-      };
-
-      int year = month.contains(startYear.toString()) ? startYear : endYear;
-      int monthIndex = monthMap[month.split(' ')[0]]!;
-      DateTime firstDay = DateTime(year, monthIndex, 1);
-      DateTime lastDay = DateTime(year, monthIndex + 1, 0);
-
-      int weekCount = 1;
-      DateTime weekStart = firstDay;
-
-      while (weekStart.isBefore(lastDay)) {
-        DateTime weekEnd = weekStart.add(Duration(days: 6));
-        if (weekEnd.isAfter(lastDay)) weekEnd = lastDay;
-
-        financialWeeks.add(
-          "Week $weekCount: ${weekStart.day}/${weekStart.month} - ${weekEnd.day}/${weekEnd.month}",
-        );
-        weekStart = weekEnd.add(Duration(days: 1));
-        weekCount++;
+      // Start of the financial year (April 1st)
+      DateTime financialYearStart = DateTime(selectedYear, 4, 1);
+      if (selectedMonth < 4) {
+        financialYearStart = DateTime(selectedYear - 1, 4, 1); // Adjust for months before April
       }
+
+      DateTime monthStart = DateTime(selectedYear, selectedMonth, 1);
+      DateTime monthEnd = DateTime(selectedYear, selectedMonth + 1, 0);
+      List<String> newWeekNumbers = [];
+      for (int day = 1; day <= monthEnd.day; day++) {
+        DateTime currentDate = DateTime(selectedYear, selectedMonth, day);
+        int daysDifference = currentDate.difference(financialYearStart).inDays;
+        int weekNumber = (daysDifference ~/ 7) + 1;
+        if (!newWeekNumbers.contains(weekNumber.toString())) {
+          newWeekNumbers.add(weekNumber.toString());
+        }
+      }
+      setState(() {
+        weekNumbers = newWeekNumbers;
+      });
+
+      print("Week numbers: $weekNumbers");
     }
+
 
     showDialog(
       context: context,
@@ -772,8 +749,28 @@ class Mainscreen extends State<MainActivityTimeSheet> {
                           .toList(),
                       onChanged: (value) {
                         setState(() {
-                          selectedYear = value; // Set the full financial year string
+                          selectedYear = value;
+                          yearselect =int.parse(value!.split('-')[0]); // Set the full financial year string
                           extractedYear = int.parse(value!.split('-')[1]); // Extract 2024
+                          extractedYear = int.parse(value!.split('-')[1]);
+                          startYear = int.parse(value.split('-')[0]);
+                          endYear = startYear + 1;
+                          financialMonths = [
+                            "April $startYear",
+                            "May $startYear",
+                            "June $startYear",
+                            "July $startYear",
+                            "August $startYear",
+                            "September $startYear",
+                            "October $startYear",
+                            "November $startYear",
+                            "December $startYear",
+                            "January $endYear",
+                            "February $endYear",
+                            "March $endYear"
+                          ];
+                         // financialMonths = getFinancialMonths(startYear, endYear);
+                          print("Selected Year: $extractedYear");
                           print("Selected Year: $extractedYear");
                         });
                       },
@@ -803,9 +800,8 @@ class Mainscreen extends State<MainActivityTimeSheet> {
                           .toList(),
                       onChanged: (value) {
                         setState(() {
-                          selectedMonth = value; // Set the full month string
+                          selectedMonth = value;
 
-                          // Extract numeric month from "August 2023"
                           List<String> monthParts = value!.split(' ');
                           String monthName = monthParts[0]; // Get "August"
                           int numericMonth = {
@@ -866,7 +862,7 @@ class Mainscreen extends State<MainActivityTimeSheet> {
                       width: double.infinity,
                       child: ElevatedButton(
                         onPressed: () {
-                          setSelection(int.parse(selectedWeek!));
+                          setSelection(yearselect!,int.parse(selectedWeek!));
                           Navigator.pop(context); // Close popup and handle search
                           print(
                               "Selected: Year=$selectedYear, Month=$selectedMonth, Week=$selectedWeek");
@@ -922,9 +918,9 @@ class Mainscreen extends State<MainActivityTimeSheet> {
       case "Submitted":
         return Colors.green; // Background color for Submitted
       case "Approved":
-        return Colors.lightGreen; // Background color for Approved
+        return Colors.lightGreen;
       default:
-        return Colors.white; // Default background color
+        return Colors.white; // Default ba
     }
   }
 
@@ -950,7 +946,7 @@ class Mainscreen extends State<MainActivityTimeSheet> {
       if(_userid == ""){
       _userid =   (await _sharedPrefHelper.getuserid())!;
       }
-      final result = await timesheetService.fetchStatusByWeek(_userid, currentWeek.toString(), 2024);
+      final result = await timesheetService.fetchStatusByWeek(_userid, currentWeek.toString(), selectedYear);
       print("ststus checking ${result["status"]}");
       if (result["status"] == "0") {
         setState(() {
@@ -1114,9 +1110,14 @@ class Mainscreen extends State<MainActivityTimeSheet> {
   }
   void _incrementWeek() {
     fetchclearData();
+    if (week == 53){
+      week = 1;
+      selectedYear++;
+    }
     setState(() {
       week++; // Increment week
-      dates = getDatesForFinancialWeek(2024, week); // Update dates
+      dates = getDatesForFinancialWeek(selectedYear, week);
+      _displaymonth = getMonthNameAndYearFromWeek(week,selectedYear);
       _numberOfRows = 0;
       _rowsData.clear();
       prepareRowsData(week.toString());
@@ -1125,21 +1126,27 @@ class Mainscreen extends State<MainActivityTimeSheet> {
   }
   void _decrementWeek() {
     fetchclearData();
+    if (week == 1){
+      week = 54;
+      selectedYear--;
+    }
     setState(() {
-      week--; // Increment week
-      dates = getDatesForFinancialWeek(2024, week); // Update dates
-      _displaymonth = getMonthNameAndYearFromWeek(week,2024);
+      week--;
+      dates = getDatesForFinancialWeek(selectedYear, week);
+      _displaymonth = getMonthNameAndYearFromWeek(week,selectedYear);
       _numberOfRows = 0;
       _rowsData.clear();
       prepareRowsData(week.toString());
       _fetchStatus(week);
     });
   }
-  void setSelection(int selectedweek) {
+  void setSelection(int year ,int selectedweek) {
+    selectedYear = year;
+    print("display months ${getDatesForFinancialWeek(year, week)}");
     setState(() {
-      week =selectedweek; // Increment week
-      dates = getDatesForFinancialWeek(2024, week); // Update dates
-      _displaymonth = getMonthNameAndYearFromWeek(week,2024);
+      week =selectedweek;
+      dates = getDatesForFinancialWeek(year, week);
+      _displaymonth = getMonthNameAndYearFromWeek(week,year);
       _numberOfRows = 0;
       _rowsData.clear();
       prepareRowsData(week.toString());
@@ -1153,6 +1160,7 @@ class Mainscreen extends State<MainActivityTimeSheet> {
     List<Map<String, dynamic>> filteredData = timesheetsAsMap
         .where((item) => item['week_no'] == weekNo)
         .toList();
+    print("testtdsfjkk ${filteredData}");
     Map<String, List<Map<String, dynamic>>> groupedData = {};
     for (var item in filteredData) {
       String projectId = item['mst_projects_id'];
@@ -1164,18 +1172,17 @@ class Mainscreen extends State<MainActivityTimeSheet> {
     groupedData.forEach((projectId, projectEntries) {
       List<String> days = List.filled(5, "");
       List<String> firstDate = List.filled(5, "");
-      List<String> mstTimesheetsId = List.filled(5, "");// Initialize 5 empty daily values
+      List<String> mstTimesheetsId = List.filled(5, "");
       double totalHours = 0;
 
       for (var entry in projectEntries) {
-        // Map the date to a weekday index (0 = Monday, 4 = Friday)
         DateTime date = DateTime.parse(entry['date']);
         int dayIndex = date.weekday - 1;
         if (dayIndex >= 0 && dayIndex < 5) {
           final parsedHrs = double.tryParse(entry['hrs'] ?? '0') ?? 0.0;
           print("Check project: Parsed hrs = $totalHours, Raw hrs = ${entry['hrs']}, Row project = ${projectEntries}");
-          days[dayIndex] = parsedHrs.toString(); // Store as a string
-          totalHours += parsedHrs; // Accumulate total hours
+          days[dayIndex] = parsedHrs.toString();
+          totalHours += parsedHrs;
           firstDate[dayIndex] = entry['date'];
           mstTimesheetsId[dayIndex] = entry['mst_timesheets_id'];
         }
@@ -1188,7 +1195,7 @@ class Mainscreen extends State<MainActivityTimeSheet> {
           "project": projectId,
           "days": days,
           "total": totalHours.toStringAsFixed(2),
-          "date": firstDate, // Include the first date encountered
+          "date": firstDate,
           "mst_timesheets_id": mstTimesheetsId,
           "user_id": userId,
           "status": "0"
@@ -1233,20 +1240,55 @@ class Mainscreen extends State<MainActivityTimeSheet> {
       ),
     );
   }
+  // List<String> getDatesForFinancialWeek(int financialYear, int weekNumber) {
+  //   print("financial year ${financialYear} ${weekNumber}"  );
+  //   List<String> dates = [];
+  //   DateTime startOfFinancialYear = DateTime(financialYear, 4, 1);
+  //   if (DateTime.now().isBefore(startOfFinancialYear)) {
+  //     startOfFinancialYear = DateTime(financialYear - 1, 4, 1);
+  //   }
+  //   DateTime weekStartDate = startOfFinancialYear.add(Duration(days: (weekNumber - 1) * 7));
+  //   DateFormat dateFormat = DateFormat('EEEE dd-MM-yy');
+  //   for (int i = 0; i < 5; i++) {
+  //     dates.add(dateFormat.format(weekStartDate.add(Duration(days: i))));
+  //   }
+  //   return dates;
+  // }
+
+
   List<String> getDatesForFinancialWeek(int financialYear, int weekNumber) {
-    print("financial year ${financialYear} ${weekNumber}"  );
+    print("financial year ${financialYear} week number ${weekNumber}");
     List<String> dates = [];
+
+    // Start of the financial year
     DateTime startOfFinancialYear = DateTime(financialYear, 4, 1);
+
+    // If the current date is before the start of the financial year, adjust to previous year
     if (DateTime.now().isBefore(startOfFinancialYear)) {
       startOfFinancialYear = DateTime(financialYear - 1, 4, 1);
     }
+
+    // Calculate the start date of the week
     DateTime weekStartDate = startOfFinancialYear.add(Duration(days: (weekNumber - 1) * 7));
+
+    int weekday = weekStartDate.weekday;
+    int daysToSubtract = (weekday == DateTime.monday)
+        ? 0
+        : (weekday == DateTime.sunday)
+        ? 6
+        : (weekday - DateTime.monday);
+
+    weekStartDate = weekStartDate.subtract(Duration(days: daysToSubtract));
+
+    // Format dates
     DateFormat dateFormat = DateFormat('EEEE dd-MM-yy');
     for (int i = 0; i < 5; i++) {
       dates.add(dateFormat.format(weekStartDate.add(Duration(days: i))));
     }
+
     return dates;
   }
+
   List<String> getDatesForFinancia(int financialYear, int weekNumber) {
     List<String> dates = [];
     DateTime startOfFinancialYear = DateTime(financialYear, 4, 1);
@@ -1286,13 +1328,13 @@ class Mainscreen extends State<MainActivityTimeSheet> {
     }
     DateTime monthStart = DateTime(selectedYear, selectedMonth, 1);
     DateTime monthEnd = DateTime(selectedYear, selectedMonth + 1, 0);
+
     List<String> newWeekNumbers = [];
 
     for (int day = 1; day <= monthEnd.day; day++) {
       DateTime currentDate = DateTime(selectedYear, selectedMonth, day);
       int daysDifference = currentDate.difference(financialYearStart).inDays;
-      int weekNumber = (daysDifference ~/ 7) + 1; // Week numbers start at 1
-
+      int weekNumber = (daysDifference ~/ 7) + 1;
       if (!newWeekNumbers.contains(weekNumber.toString())) {
         newWeekNumbers.add(weekNumber.toString());
       }
@@ -1303,6 +1345,33 @@ class Mainscreen extends State<MainActivityTimeSheet> {
 
     print("Week numbers: $weekNumbers");
   }
+
+
+  // void calculateFinancialWeek(int selectedYear, int selectedMonth) {
+  //   print("Financial year: $selectedYear, Month: $selectedMonth");
+  //   DateTime financialYearStart = DateTime(selectedYear, 4, 1);
+  //   if (selectedMonth < 4) {
+  //     financialYearStart = DateTime(selectedYear - 1, 4, 1); // Adjust for months before April
+  //   }
+  //   DateTime monthStart = DateTime(selectedYear, selectedMonth, 1);
+  //   DateTime monthEnd = DateTime(selectedYear, selectedMonth + 1, 0);
+  //   List<String> newWeekNumbers = [];
+  //
+  //   for (int day = 1; day <= monthEnd.day; day++) {
+  //     DateTime currentDate = DateTime(selectedYear, selectedMonth, day);
+  //     int daysDifference = currentDate.difference(financialYearStart).inDays;
+  //     int weekNumber = (daysDifference ~/ 7) + 1; // Week numbers start at 1
+  //
+  //     if (!newWeekNumbers.contains(weekNumber.toString())) {
+  //       newWeekNumbers.add(weekNumber.toString());
+  //     }
+  //   }
+  //   setState(() {
+  //     weekNumbers = newWeekNumbers;
+  //   });
+  //
+  //   print("Week numbers: $weekNumbers");
+  // }
 
    generateRequestBody() async {
     setState(() {
@@ -1325,7 +1394,7 @@ class Mainscreen extends State<MainActivityTimeSheet> {
         String userId = _userid;
         String? status = submitstatus;
         String weekNo = week.toString();
-        String year = "2024";
+        String year = "${selectedYear}";
 
         print("statuscheck looking ${submitstatus}");
 
@@ -1383,8 +1452,12 @@ class Mainscreen extends State<MainActivityTimeSheet> {
       _email = email!;
       if(_roll == "Employee"){
         isEmployee = true;
+        approveBuuten = "Approve & Submit";
+        submitButton =   "Save as Draft";
       } else {
         isEmployee = false;
+        approveBuuten = "Submit";
+        submitButton =  "Save as Draft";
       }
     });
     fetchData();
@@ -1393,7 +1466,7 @@ class Mainscreen extends State<MainActivityTimeSheet> {
     ScaffoldMessenger.of(context).showSnackBar(SnackBar(content: Text(message)));
   }
   void refresh() {
-    week = getFinancialWeek(DateTime.now());
+   // week = getFinancialWeek(DateTime.now());
     prepareRowsData(week.toString());
     fetchData();
   }

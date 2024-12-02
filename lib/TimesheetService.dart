@@ -180,7 +180,7 @@ class TimesheetService {
 
 
   Future<Map<String, dynamic>> addTimesheet(Map<String, dynamic> requestBody) async {
-    final String apiUrl = "https://devtashseet.proteam.co.in/backend/api/web/Timesheet/add";
+   // final String apiUrl = "https://devtashseet.proteam.co.in/backend/api/web/Timesheet/add";
     try {
       final response = await http.post(
         Uri.parse(apiUrl+"Timesheet/add"),
@@ -236,7 +236,6 @@ class TimesheetService {
   }
 
   Future<Map<String, dynamic>> deleteTimesheet(String projectId, String userId, String weekNo) async {
-    final String apiUrl1 = "https://devtashseet.proteam.co.in/backend/api/web/Timesheet/get_delete";
     final Map<String, String> requestBody = {
       "project_id": projectId,
       "user_id": userId,
