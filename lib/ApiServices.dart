@@ -10,18 +10,18 @@ class ApiService {
    final String baseUrl = 'https://renewtimesheet.proteam.co.in/backend/api/web/validate_login';
 
   Future<LoginResponse?> login(String username, String password) async {
-    final url = Uri.parse('$baseUrl'); // Ensure this is correct
+    final url = Uri.parse('$baseUrl');
     try {
       final request = http.MultipartRequest('POST', url);
       request.fields['email'] = username;
       request.fields['password'] = password;
-      request.headers['Cookie'] = 'ci_session=your_dynamic_session_token'; // Avoid hardcoding
+      request.headers['Cookie'] = 'ci_session=your_dynamic_session_token';
 
       final response = await request.send();
       final responseBody = await http.Response.fromStream(response);
 
-      print('Response status: ${responseBody.statusCode}');
-      print('Response body: ${responseBody.body}');
+    //  print('Response status: ${responseBody.statusCode}');
+    //  print('Response body: ${responseBody.body}');
 
       if (responseBody.statusCode == 200) {
         final Map<String, dynamic> jsonResponse = jsonDecode(responseBody.body);

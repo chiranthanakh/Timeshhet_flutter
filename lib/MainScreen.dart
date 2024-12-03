@@ -899,7 +899,7 @@ class Mainscreen extends State<MainActivityTimeSheet> {
       print(timesheets);
       prepareRowsData(week.toString());
     });
-    _fetchStatus(currentWeek);
+    _fetchStatus(week);
   }
   Future<void> fetchclearData() async {
     _rowsData.clear();
@@ -946,6 +946,7 @@ class Mainscreen extends State<MainActivityTimeSheet> {
       if(_userid == ""){
       _userid =   (await _sharedPrefHelper.getuserid())!;
       }
+      print("Status checking by uri  ${currentWeek}");
       final result = await timesheetService.fetchStatusByWeek(_userid, currentWeek.toString(), selectedYear);
       print("ststus checking ${result["status"]}");
       if (result["status"] == "0") {
@@ -1424,6 +1425,7 @@ class Mainscreen extends State<MainActivityTimeSheet> {
       print('Timesheet request: $requestBody');
       final response = await timesheetService.addTimesheet(requestBody); // Make API call
       refresh();
+      _fetchStatus(week);
       print('Timesheet API Response: $response');
     } catch (e) {
       print('Error submitting timesheet: $e');

@@ -101,7 +101,7 @@ class _ReportsPageState extends State<Reportsscreen> {
                         selectedStatus = newValue!;
                         // Map "Submitted" to 1 and other values to 2
                         if (selectedStatus == "Submitted") {
-                          fetchReports(_userid!, "1");
+                          fetchReports(_userid!, "2");
                         } else {
                           fetchReports(_userid!, "0"); // set value to "2" for other selections
                         }
@@ -218,7 +218,8 @@ class _ReportsPageState extends State<Reportsscreen> {
 
   Future<void> fetchReports(String userId, String status) async {
 
-    final url = Uri.parse("https://devtashseet.proteam.co.in/backend/api/web/Timesheet/get_all_timesheet_by_status");
+    //final url = Uri.parse("https://devtashseet.proteam.co.in/backend/api/web/Timesheet/get_all_timesheet_by_status");
+    final url = Uri.parse("https://renewtimesheet.proteam.co.in/backend/api/web/Timesheet/get_all_timesheet_by_status");
     final body = jsonEncode({
       "status": status,
       "user_id": userId,

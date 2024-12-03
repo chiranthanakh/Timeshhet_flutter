@@ -44,7 +44,7 @@ dependencies:
 flutter_icons:
    android: true
    ios: true
-   image_path: "assets/renew_logo.png"
+   image_path: "assets/ReNew_Logo.png"
 
 dev_dependencies:
   flutter_test:
@@ -74,6 +74,7 @@ flutter:
     - assets/login_page_timesheet.png
     - assets/user_icon.png
     - assets/add_plus.png
+    - assets/ReNew_Logo.jpg
 
   # An image asset can refer to one or more resolution-specific "variants", see
   # https://flutter.dev/to/resolution-aware-images

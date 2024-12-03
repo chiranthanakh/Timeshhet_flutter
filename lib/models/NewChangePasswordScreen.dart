@@ -20,6 +20,7 @@ class _NewChangePasswordScreenState extends State<NewChangePasswordScreen> {
 
   bool _isLoading = false;
   String _roll = "";
+  String _userId = "";
 
   @override
   void initState() {
@@ -261,11 +262,65 @@ class _NewChangePasswordScreenState extends State<NewChangePasswordScreen> {
     String? userrole = await _sharedPrefHelper.getuserrole();
     String? departmentid = await _sharedPrefHelper.getdepartementid();
     String? rollid = await _sharedPrefHelper.getrollid();
+    String? email = await _sharedPrefHelper.getemail();
 
     print("loginstatus ${userid}");
     setState(() {
-      _roll = userrole!;
+      _roll = email!;
+      _userId = userid!;
     });
+  }
+
+  Future<void> changePassword() async {
+   // final url = 'https://devtashseet.proteam.co.in/backend/api/web/Users/changepassword';
+    final url = 'https://renewtimesheet.proteam.co.in/backend/api/web/Users/changepassword';
+
+    if (_newPasswordController.text != _confirmPasswordController.text) {
+      _showMessage('New Password and Confirm Password do not match');
+      return;
+    }
+
+    if (_oldPasswordController.text.isEmpty || _newPasswordController.text.isEmpty || _confirmPasswordController.text.isEmpty) {
+      _showMessage('Please fill in all fields');
+      return;
+    }
+
+    final headers = {
+      'Content-Type': 'application/json',
+    };
+
+    final body = jsonEncode({
+      'email': _roll,
+      'newpassword': _newPasswordController.text,
+      'old': _oldPasswordController.text,
+      'user_id': _userId,
+    });
+
+    try {
+      final response = await http.post(Uri.parse(url), headers: headers, body: body);
+
+      if (response.statusCode == 200) {
+        final Map<String, dynamic> responseData = jsonDecode(response.body);
+
+        if (responseData['success'] == 1) {
+          setState(() {
+            _showMessage(responseData['message']);
+          });
+        } else {
+          setState(() {
+            _showMessage('Failed to change password.');
+          });
+        }
+      } else {
+        setState(() {
+          _showMessage('Error: ${response.statusCode}');
+        });
+      }
+    } catch (e) {
+      setState(() {
+        _showMessage('Error: ${e}');
+      });
+    }
   }
 }
 
